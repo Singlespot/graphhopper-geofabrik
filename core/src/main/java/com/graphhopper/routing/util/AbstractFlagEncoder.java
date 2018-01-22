@@ -1,14 +1,14 @@
 /*
  *  Licensed to GraphHopper GmbH under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
+ *  license agreements. See the NOTICE file distributed with this work for
  *  additional information regarding copyright ownership.
- * 
- *  GraphHopper GmbH licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
+ *
+ *  GraphHopper GmbH licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except in
  *  compliance with the License. You may obtain a copy of the License at
- * 
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,7 @@ import com.graphhopper.reader.ConditionalTagInspector;
 import com.graphhopper.reader.ReaderNode;
 import com.graphhopper.reader.ReaderRelation;
 import com.graphhopper.reader.ReaderWay;
-import com.graphhopper.reader.osm.conditional.ConditionalOSMTagInspector;
-import com.graphhopper.reader.osm.conditional.DateRangeParser;
+import com.graphhopper.reader.osm.conditional.DummyConditionalTagInspector;
 import com.graphhopper.routing.weighting.TurnWeighting;
 import com.graphhopper.util.*;
 import org.slf4j.Logger;
@@ -116,7 +115,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     // should be called as last method in constructor, move out of the flag encoder somehow
     protected void init() {
         // we should move 'OSM to object' logic into the DataReader like OSMReader, but this is a major task as we need to convert OSM format into kind of a standard/generic format
-        conditionalTagInspector = new ConditionalOSMTagInspector(DateRangeParser.createCalendar(), restrictions, restrictedValues, intendedValues);
+        conditionalTagInspector = new DummyConditionalTagInspector();
     }
 
     @Override
@@ -460,7 +459,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
                     // Plausibility check especially for the case of wrongly used PxM format with the intention to
                     // specify the duration in minutes, but actually using months
                     if (calculatedTripSpeed > 0.01d) {
-                        // If we have a very short ferry with an average lower compared to what we can encode 
+                        // If we have a very short ferry with an average lower compared to what we can encode
                         // then we need to avoid setting it as otherwise the edge would not be found at all any more.
                         if (Math.round(calculatedTripSpeed) > speedEncoder.factor / 2) {
                             shortTripsSpeed = Math.round(calculatedTripSpeed);
@@ -468,7 +467,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
                                 shortTripsSpeed = getMaxSpeed();
                             longTripsSpeed = shortTripsSpeed;
                         } else {
-                            // Now we set to the lowest possible still accessible speed. 
+                            // Now we set to the lowest possible still accessible speed.
                             shortTripsSpeed = speedEncoder.factor / 2;
                         }
                     } else {
