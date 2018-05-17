@@ -85,6 +85,7 @@ public class OSMReader implements DataReader {
     private final Map<FlagEncoder, EdgeExplorer> inExplorerMap = new HashMap<>();
     protected long zeroCounter = 0;
     protected PillarInfo pillarInfo;
+    private List<OSMReaderHook> hooks;
     private long locations;
     private long skippedLocations;
     private final EncodingManager encodingManager;
@@ -119,11 +120,16 @@ public class OSMReader implements DataReader {
         this.graph = ghStorage;
         this.nodeAccess = graph.getNodeAccess();
         this.encodingManager = ghStorage.getEncodingManager();
+        this.hooks = new LinkedList<OSMReaderHook>();
 
         osmNodeIdToInternalNodeMap = new GHLongIntBTree(200);
         osmNodeIdToNodeFlagsMap = new GHLongLongHashMap(200, .5f);
         osmWayIdToRouteWeightMap = new GHLongLongHashMap(200, .5f);
         pillarInfo = new PillarInfo(nodeAccess.is3D(), ghStorage.getDirectory());
+    }
+
+    public void register(OSMReaderHook hook) {
+        this.hooks.add(hook);
     }
 
     @Override
@@ -211,6 +217,10 @@ public class OSMReader implements DataReader {
      */
     private LongSet getOsmWayIdSet() {
         return osmWayIdSet;
+    }
+
+    public final EncodingManager getEncodingManager() {
+        return encodingManager;
     }
 
     private IntLongMap getEdgeIdToOsmWayIdMap() {
@@ -527,6 +537,12 @@ public class OSMReader implements DataReader {
         } else {
             skippedLocations++;
         }
+        // We have to call the hooks after having added the node to the graph.
+        // Before that step, the node has a temporary internal ID only indicating whether it is
+        // a tower or a pillar node.
+        for (OSMReaderHook h : hooks) {
+            h.processNode(node);
+        }
     }
 
     boolean addNode(ReaderNode node) {
@@ -583,13 +599,24 @@ public class OSMReader implements DataReader {
         }
     }
 
+    /**
+     * Convert the ID of a tower node which has been written to the graph storage
+     * into a ID to be inserted into the mapping from OSM node IDs to graph node IDs.
+     *
+     * @param towerId ID of the tower node
+     * @return ID to be inserted into the map
+     */
+    public static int towerIdToMapId(int towerId) {
+        return -(towerId + 3);
+    }
+
     int addTowerNode(long osmId, double lat, double lon, double ele) {
         if (nodeAccess.is3D())
             nodeAccess.setNode(nextTowerId, lat, lon, ele);
         else
             nodeAccess.setNode(nextTowerId, lat, lon);
 
-        int id = -(nextTowerId + 3);
+        int id = towerIdToMapId(nextTowerId);
         getNodeMap().put(osmId, id);
         nextTowerId++;
         return id;
@@ -862,7 +889,7 @@ public class OSMReader implements DataReader {
     /**
      * Maps OSM IDs (long) to internal node IDs (int)
      */
-    protected LongIntMap getNodeMap() {
+    public LongIntMap getNodeMap() {
         return osmNodeIdToInternalNodeMap;
     }
 
