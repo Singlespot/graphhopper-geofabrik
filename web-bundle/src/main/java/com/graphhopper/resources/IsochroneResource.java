@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphhopper.GraphHopper;
+import com.graphhopper.http.WebHelper;
 import com.graphhopper.isochrone.algorithm.Isochrone;
 import com.graphhopper.isochrone.algorithm.RasterHullBuilder;
 import com.graphhopper.routing.QueryGraph;
@@ -21,14 +22,8 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import javax.ws.rs.core.*;
+import java.util.*;
 
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 
@@ -85,7 +80,7 @@ public class IsochroneResource {
         queryGraph.lookup(Collections.singletonList(qr));
 
         HintsMap hintsMap = new HintsMap();
-        RouteResource.initHints(hintsMap, uriInfo.getQueryParameters());
+        WebHelper.initHints(hintsMap, uriInfo.getQueryParameters());
 
         Weighting weighting = graphHopper.createWeighting(hintsMap, encoder, graph);
         Isochrone isochrone = new Isochrone(queryGraph, weighting, reverseFlow);
