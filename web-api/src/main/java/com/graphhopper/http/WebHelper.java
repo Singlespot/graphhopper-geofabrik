@@ -30,6 +30,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.xml.parsers.DocumentBuilder;
@@ -189,7 +190,7 @@ public class WebHelper {
                 error.setAttribute("message", t.getMessage());
                 error.setAttribute("details", t.getClass().getName());
             }
-            return Response.status(400).entity(doc).build();
+            return Response.status(400).entity(doc).type(MediaType.valueOf("application/gpx+xml")).build();
         } catch (ParserConfigurationException e) {
             throw new RuntimeException(e);
         }
