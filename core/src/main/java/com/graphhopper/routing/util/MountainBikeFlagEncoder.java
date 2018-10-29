@@ -44,7 +44,7 @@ public class MountainBikeFlagEncoder extends BikeCommonFlagEncoder {
                 properties.getBool("turn_costs", false) ? 1 : 0
         );
         this.properties = properties;
-        this.setBlockFords(properties.getBool("block_fords", true));
+        this.setBlockFords(properties.getBool("block_fords", false));
     }
 
     public MountainBikeFlagEncoder(String propertiesStr) {

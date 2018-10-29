@@ -61,7 +61,7 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
         this((int) properties.getLong("speedBits", 4),
                 properties.getDouble("speedFactor", 1));
         this.properties = properties;
-        this.setBlockFords(properties.getBool("block_fords", true));
+        this.setBlockFords(properties.getBool("block_fords", false));
     }
 
     public FootFlagEncoder(String propertiesStr) {
