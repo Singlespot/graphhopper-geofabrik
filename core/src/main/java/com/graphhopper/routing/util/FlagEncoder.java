@@ -75,6 +75,10 @@ public interface FlagEncoder extends TurnCostEncoder {
      */
     long setAccess(long flags, boolean forward, boolean backward);
 
+    public int getSurface(long flags);
+
+    public String getSurfaceAsString(long flags);
+
     /**
      * Sets speed and access properties.
      * <p>

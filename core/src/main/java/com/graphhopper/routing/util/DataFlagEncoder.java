@@ -586,12 +586,18 @@ public class DataFlagEncoder extends AbstractFlagEncoder {
         return res;
     }
 
-    public int getSurface(EdgeIteratorState edge) {
-        return (int) surfaceEncoder.getValue(edge.getFlags());
+    @Override
+    public int getSurface(long flags) {
+        return (int) surfaceEncoder.getValue(flags);
     }
 
     public String getSurfaceAsString(EdgeIteratorState edge) {
-        int val = getSurface(edge);
+        return getSurfaceAsString(edge.getFlags());
+    }
+
+    @Override
+    public String getSurfaceAsString(long flags) {
+        int val = getSurface(flags);
         for (Entry<String, Integer> e : surfaceMap.entrySet()) {
             if (e.getValue() == val)
                 return e.getKey();

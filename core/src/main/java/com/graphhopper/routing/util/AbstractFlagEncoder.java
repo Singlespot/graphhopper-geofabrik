@@ -605,6 +605,16 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         return turnCostEncoder.setValue(0L, (int) costs);
     }
 
+    @Override
+    public int getSurface(long flags) {
+        return 0;
+    }
+
+    @Override
+    public String getSurfaceAsString(long flags) {
+        return null;
+    }
+
     protected boolean isFerry(long internalFlags) {
         return (internalFlags & ferryBit) != 0;
     }
