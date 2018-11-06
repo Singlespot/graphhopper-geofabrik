@@ -15,21 +15,26 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.graphhopper.search;
 
-import com.graphhopper.util.shapes.GHPlace;
+package com.graphhopper;
 
+import java.util.Collections;
 import java.util.List;
 
-/**
- * Interface to convert from place names to points.
- * <p>
- *
- * @author Peter Karich
- */
-public interface Geocoding {
-    /**
-     * Returns a list of matching points for the specified place query string.
-     */
-    List<GHPlace> names2places(GHPlace... place);
+public class MultiException extends RuntimeException {
+
+    private final List<Throwable> errors;
+
+    public MultiException(List<Throwable> errors) {
+        this.errors = errors;
+    }
+
+    public MultiException(Throwable e) {
+        this(Collections.singletonList(e));
+    }
+
+    public List<Throwable> getErrors() {
+        return errors;
+    }
+
 }

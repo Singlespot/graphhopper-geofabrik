@@ -128,7 +128,7 @@ public class GraphHopperWeb implements GraphHopperAPI {
             JsonNode descriptionNode = path.get("description");
             if (descriptionNode.isArray()) {
                 List<String> description = new ArrayList<>(descriptionNode.size());
-                for (JsonNode descNode: descriptionNode) {
+                for (JsonNode descNode : descriptionNode) {
                     description.add(descNode.asText());
                 }
                 pathWrapper.setDescription(description);
@@ -351,11 +351,11 @@ public class GraphHopperWeb implements GraphHopperAPI {
 
     @Override
     public GHResponse route(GHRequest request) {
+        ResponseBody rspBody = null;
         try {
             Request okRequest = createRequest(request);
-            ResponseBody rspBody = getClientForRequest(request).newCall(okRequest).execute().body();
+            rspBody = getClientForRequest(request).newCall(okRequest).execute().body();
             JsonNode json = objectMapper.reader().readTree(rspBody.byteStream());
-            rspBody.close();
 
             GHResponse res = new GHResponse();
             res.addErrors(readErrors(json));
@@ -376,6 +376,8 @@ public class GraphHopperWeb implements GraphHopperAPI {
 
         } catch (Exception ex) {
             throw new RuntimeException("Problem while fetching path " + request.getPoints() + ": " + ex.getMessage(), ex);
+        } finally {
+            Helper.close(rspBody);
         }
     }
 
@@ -429,6 +431,10 @@ public class GraphHopperWeb implements GraphHopperAPI {
 
         for (String details : request.getPathDetails()) {
             url += "&" + Parameters.DETAILS.PATH_DETAILS + "=" + details;
+        }
+
+        for (String hint : request.getPointHints()) {
+            url += "&point_hint=" + WebHelper.encodeURL(hint);
         }
 
         if (!key.isEmpty()) {

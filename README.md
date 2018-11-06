@@ -39,13 +39,31 @@ a Routing API via GraphHopper, a Route Optimization API via [jsprit](http://jspr
 and an address search via [Photon](https://github.com/komoot/photon). Additionally, map tiles from various providers are used 
 where the default is [Omniscale](http://omniscale.com/). All of these are available for free, via encrypted connections and from German servers for a nice and private route planning experience!
 
+## For Public Transit
+
+[Get started](./reader-gtfs/README.md#quick-start)
+
+[![Realtime Demo](https://www.graphhopper.com/wp-content/uploads/2018/05/Screen-Shot-2018-05-16-at-21.23.25-600x538.png)](./reader-gtfs/README.md#quick-start)
 
 ## For Mobile Apps
 
 There are subprojects to make GraphHopper working offline
-on [Android](https://github.com/graphhopper/graphhopper/tree/master/android)
+on [Android](./android/README.md)
 and [iOS](http://github.com/graphhopper/graphhopper-ios)
 
+[![simple routing](https://www.graphhopper.com/wp-content/uploads/2016/10/android-demo-screenshot-2.png)](./android/README.md)
+
+## For Analysis
+
+There is the isochrone subproject to calculate and visualize the reachable area for a certain travel mode
+
+**[Isochrone Web API](./docs/web/api-doc.md#isochrone)**
+
+[![Isochrone API image](./docs/isochrone/images/isochrone.png)](./docs/web/api-doc.md#isochrone)
+
+**[Isochrone Experiments](//www.graphhopper.com/blog/2018/07/04/high-precision-reachability/)**
+
+[![high precision reachability image](https://www.graphhopper.com/wp-content/uploads/2018/06/berlin-reachability-768x401.png)](https://www.graphhopper.com/blog/2018/07/04/high-precision-reachability/)
 
 # Technical Overview
 
@@ -94,7 +112,7 @@ Embed GraphHopper with OpenStreetMap support into your Java application via the 
 <dependency>
     <groupId>com.graphhopper</groupId>
     <artifactId>graphhopper-reader-osm</artifactId>
-    <version>[LATEST-VERSION]/version>
+    <version>[LATEST-VERSION]</version>
 </dependency>
 ```
 
@@ -148,6 +166,13 @@ cd core/files/
 docker-compose up -d
 ```
 
+If you don't want to use docker-compose you can do the following:
+```bash
+docker build -t graphhopper:master .
+docker run -d --name graphhopper -v <path_data_directory>/data:/data -p 11111:11111 graphhopper:master
+```
+
+
 # Features
 
 Here is a list of the more detailed features including a link to the documentation:
@@ -174,3 +199,4 @@ Here is a list of the more detailed features including a link to the documentati
  * Scales from small indoor-sized to world-wide-sized graphs
  * Find nearest point on street e.g. to get elevation or 'snapp to road'
  * Do [map matching](https://github.com/graphhopper/map-matching) with GraphHopper
+ * Calculate [isochrones](./docs/web/api-doc.md#isochrone) with GraphHopper
