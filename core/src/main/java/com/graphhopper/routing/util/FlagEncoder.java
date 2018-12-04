@@ -79,6 +79,10 @@ public interface FlagEncoder extends TurnCostEncoder {
 
     public String getSurfaceAsString(long flags);
 
+    public int getRoadEnvironment(long flags);
+
+    public String getRoadEnvironmentAsString(long flags);
+
     /**
      * Sets speed and access properties.
      * <p>

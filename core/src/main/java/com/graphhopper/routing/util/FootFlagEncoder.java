@@ -148,6 +148,9 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
 
         priorityWayEncoder = new EncodedValue("PreferWay", shift, 3, 1, 0, 7);
         shift += priorityWayEncoder.getBits();
+
+        shift = defineDetailsBits(shift);
+
         return shift;
     }
 
@@ -305,6 +308,11 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
             flags = setSpeed(flags, ferrySpeed);
             flags |= directionBitMask;
         }
+
+        // surface
+        flags = surfaceEncoder.setValue(flags, getSurfaceIndex(way.getTag("surface")));
+        // road_environment
+        flags = roadEnvironmentEncoder.setValue(flags, getRoadEnvironmentIndex(way));
 
         int priorityFromRelation = 0;
         if (relationFlags != 0)

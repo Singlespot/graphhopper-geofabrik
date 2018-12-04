@@ -53,6 +53,9 @@ public class PathDetailsBuilderFactory {
         if (requestedPathDetails.contains(SURFACE))
             builders.add(new SurfaceDetails(encoder));
 
+        if (requestedPathDetails.contains(ROAD_ENVIRONMENT))
+            builders.add(new RoadEnvironmentDetails(encoder));
+
         if (requestedPathDetails.size() != builders.size()) {
             throw new IllegalArgumentException("You requested the details " + requestedPathDetails + " but we could only find " + builders);
         }

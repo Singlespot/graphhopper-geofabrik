@@ -199,6 +199,7 @@ public class Parameters {
         public static final String TIME = "time";
         public static final String DISTANCE = "distance";
         public static final String SURFACE = "surface";
+        public static final String ROAD_ENVIRONMENT = "road_environment";
     }
 
     public static final class PT {

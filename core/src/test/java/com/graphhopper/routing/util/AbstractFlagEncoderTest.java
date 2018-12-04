@@ -19,7 +19,12 @@ package com.graphhopper.routing.util;
 
 import org.junit.Test;
 
+import com.graphhopper.reader.ReaderWay;
+
 import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Peter Karich
@@ -43,6 +48,46 @@ public class AbstractFlagEncoderTest {
         assertEquals(80, encoder.parseSpeed("RU:rural"), 1e-3);
 
         assertEquals(6, encoder.parseSpeed("walk"), 1e-3);
+    }
+
+    @Test
+    public void testSurface() {
+        BikeFlagEncoder encoder = new BikeFlagEncoder(5, 5, 0);
+        ArrayList<String> surfaces = new ArrayList<String>() {{
+            add("asphalt");
+            add("unpaved");
+            add("paved");
+            add("gravel");
+            add("ground");
+            add("dirt");
+            add("grass");
+            add("concrete");
+            add("paving_stones");
+            add("sand");
+            add("compacted");
+            add("cobblestone");
+            add("mud");
+            add("ice");
+        }};
+        for (String s : surfaces) {
+            assertEquals(s, encoder.getSurfaceName(encoder.getSurfaceIndex(s)));
+        }
+    }
+
+    @Test
+    public void testRoadEnvironment() {
+        BikeFlagEncoder encoder = new BikeFlagEncoder(5, 5, 0);
+        ReaderWay bridgeWay = new ReaderWay(1);
+        bridgeWay.setTag("bridge", "yes");
+        ReaderWay tunnelWay = new ReaderWay(2);
+        tunnelWay.setTag("tunnel", "yes");
+        ReaderWay fordWay = new ReaderWay(3);
+        fordWay.setTag("ford", "yes");
+        ReaderWay way = new ReaderWay(4);
+        assertEquals("bridge", encoder.getRoadEnvironmentName(encoder.getRoadEnvironmentIndex(bridgeWay)));
+        assertEquals("tunnel", encoder.getRoadEnvironmentName(encoder.getRoadEnvironmentIndex(tunnelWay)));
+        assertEquals("ford", encoder.getRoadEnvironmentName(encoder.getRoadEnvironmentIndex(fordWay)));
+        assertEquals("_default", encoder.getRoadEnvironmentName(encoder.getRoadEnvironmentIndex(way)));
     }
 
 }

@@ -158,7 +158,11 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
         shift = super.defineWayBits(index, shift);
         speedEncoder = new EncodedDoubleValue("Speed", shift, speedBits, speedFactor, defaultSpeedMap.get("secondary"),
                 maxPossibleSpeed);
-        return shift + speedEncoder.getBits();
+        shift += speedEncoder.getBits();
+        
+        shift = defineDetailsBits(shift);
+
+        return shift;
     }
 
     protected double getSpeed(ReaderWay way) {
@@ -268,6 +272,11 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
             flags = setSpeed(flags, ferrySpeed);
             flags |= directionBitMask;
         }
+
+        // surface
+        flags = surfaceEncoder.setValue(flags, getSurfaceIndex(way.getTag("surface")));
+        // road_environment
+        flags = roadEnvironmentEncoder.setValue(flags, getRoadEnvironmentIndex(way));
 
         for (String restriction : restrictions) {
             if (way.hasTag(restriction, "destination")) {

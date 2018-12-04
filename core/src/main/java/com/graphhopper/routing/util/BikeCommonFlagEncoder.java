@@ -218,6 +218,8 @@ abstract public class BikeCommonFlagEncoder extends AbstractFlagEncoder {
         priorityWayEncoder = new EncodedValue("PreferWay", shift, 3, 1, 0, 7);
         shift += priorityWayEncoder.getBits();
 
+        shift = defineDetailsBits(shift);
+
         return shift;
     }
 
@@ -368,6 +370,11 @@ abstract public class BikeCommonFlagEncoder extends AbstractFlagEncoder {
             priorityFromRelation = (int) relationCodeEncoder.getValue(relationFlags);
 
         flags = priorityWayEncoder.setValue(flags, handlePriority(way, wayTypeSpeed, priorityFromRelation));
+
+        // surface
+        flags = surfaceEncoder.setValue(flags, getSurfaceIndex(way.getTag("surface")));
+        // road_environment
+        flags = roadEnvironmentEncoder.setValue(flags, getRoadEnvironmentIndex(way));
         return flags;
     }
 

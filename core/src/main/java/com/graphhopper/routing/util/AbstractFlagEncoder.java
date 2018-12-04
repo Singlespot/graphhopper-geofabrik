@@ -28,9 +28,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 /**
  * Abstract class which handles flag decoding and encoding. Every encoder should be registered to a
@@ -44,6 +48,7 @@ import java.util.Set;
  */
 public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncoder {
     protected final static int K_FORWARD = 0, K_BACKWARD = 1;
+    protected final static int K_INVALID = -1;
     private final static Logger logger = LoggerFactory.getLogger(AbstractFlagEncoder.class);
     /* restriction definitions where order is important */
     protected final List<String> restrictions = new ArrayList<>(5);
@@ -62,6 +67,8 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     protected long directionBitMask;
     protected long roundaboutBit;
     protected EncodedDoubleValue speedEncoder;
+    protected EncodedValue surfaceEncoder = null;
+    protected EncodedValue roadEnvironmentEncoder = null;
     // bit to signal that way is accepted
     protected long acceptBit;
     protected long ferryBit;
@@ -183,6 +190,15 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         acceptBit = 1L << index;
         ferryBit = 2L << index;
 
+        return shift;
+    }
+
+    protected int defineDetailsBits(int shift) {
+        surfaceEncoder = new EncodedValue("surface", shift, 4, 1, 0, 15, true);
+        shift += surfaceEncoder.getBits();
+
+        roadEnvironmentEncoder = new EncodedValue("road_environment", shift, 2, 1, 0, 3, true);
+        shift += roadEnvironmentEncoder.getBits();
         return shift;
     }
 
@@ -607,12 +623,38 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
 
     @Override
     public int getSurface(long flags) {
-        return 0;
+        if (surfaceEncoder == null) {
+            return K_INVALID;
+        }
+        return (int) surfaceEncoder.getValue(flags);
+    }
+
+    public String getSurfaceAsString(EdgeIteratorState edge) {
+        return getSurfaceAsString(edge.getFlags());
     }
 
     @Override
     public String getSurfaceAsString(long flags) {
-        return null;
+        int val = getSurface(flags);
+        return getSurfaceName(val);
+    }
+
+    @Override
+    public int getRoadEnvironment(long flags) {
+        if (roadEnvironmentEncoder == null) {
+            return K_INVALID;
+        }
+        return (int) roadEnvironmentEncoder.getValue(flags);
+    }
+
+    public String getRoadEnvironmenteAsString(EdgeIteratorState edge) {
+        return getRoadEnvironmentAsString(edge.getFlags());
+    }
+
+    @Override
+    public String getRoadEnvironmentAsString(long flags) {
+        int val = getRoadEnvironment(flags);
+        return getRoadEnvironmentName(val);
     }
 
     protected boolean isFerry(long internalFlags) {
@@ -706,6 +748,122 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
             return maxTurnCosts > 0;
 
         return false;
+    }
+
+    public int getRoadEnvironmentIndex(ReaderWay way) {
+        if (way.hasTag("bridge", "yes", "viaduct")) {
+            return 1;
+        }
+        if (way.hasTag("tunnel", "yes", "building_passage", "culvert", "avalanche_protector")) {
+            return 2;
+        }
+        if (way.hasTag("ford", "yes")) {
+            return 3;
+        }
+        return 0;
+    }
+
+    public String getRoadEnvironmentName(int index) {
+        switch (index) {
+        case K_INVALID:
+            return null;
+        case 0:
+            return "_default";
+        case 1:
+            return "bridge";
+        case 2:
+            return "tunnel";
+        case 3:
+            return "ford";
+        }
+        return null;
+    }
+
+    public int getSurfaceIndex(String value) {
+        if (value == null) {
+            return 0;
+        }
+        if (value.equals("asphalt")) {
+            return 1;
+        }
+        if (value.equals("unpaved")) {
+            return 2;
+        }
+        if (value.equals("paved") || value.equals("metal")) {
+            return 3;
+        }
+        if (value.equals("gravel") || value.equals("pebblestone")) {
+            return 4;
+        }
+        if (value.equals("ground") || value.equals("salt")) {
+            return 5;
+        }
+        if (value.equals("dirt")) {
+            return 6;
+        }
+        if (value.equals("grass")) {
+            return 7;
+        }
+        if (value.equals("concrete")) {
+            return 8;
+        }
+        if (value.equals("paving_stones") || value.equals("sett")) {
+            return 9;
+        }
+        if (value.equals("sand")) {
+            return 10;
+        }
+        if (value.equals("compacted") || value.equals("fine_gravel")) {
+            return 11;
+        }
+        if (value.equals("cobblestone") || value.equals("unhew_cobblestone")) {
+            return 12;
+        }
+        if (value.equals("mud")) {
+            return 13;
+        }
+        if (value.equals("ice")) {
+            return 14;
+        }
+        return 0;
+    }
+
+    public String getSurfaceName(int index) {
+        switch (index) {
+        case K_INVALID:
+            return null;
+        case 0:
+            return "_default";
+        case 1:
+            return "asphalt";
+        case 2:
+            return "unpaved";
+        case 3:
+            return "paved";
+        case 4:
+            return "gravel";
+        case 5:
+            return "ground";
+        case 6:
+            return "dirt";
+        case 7:
+            return "grass";
+        case 8:
+            return "concrete";
+        case 9:
+            return "paving_stones";
+        case 10:
+            return "sand";
+        case 11:
+            return "compacted";
+        case 12:
+            return "cobblestone";
+        case 13:
+            return "mud";
+        case 14:
+            return "ice";
+        }
+        return null;
     }
 
 }

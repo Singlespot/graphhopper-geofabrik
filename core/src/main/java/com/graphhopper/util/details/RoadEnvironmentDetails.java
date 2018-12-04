@@ -20,22 +20,22 @@ package com.graphhopper.util.details;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.util.EdgeIteratorState;
 
-import static com.graphhopper.util.Parameters.DETAILS.SURFACE;
+import static com.graphhopper.util.Parameters.DETAILS.ROAD_ENVIRONMENT;
 
 /**
  * Get surface of for a Path
  *
  * @author Michael Reichert
  */
-public class SurfaceDetails extends AbstractPathDetailsBuilder {
+public class RoadEnvironmentDetails extends AbstractPathDetailsBuilder {
 
     private final FlagEncoder encoder;
 
     private int edgeId = -1;
-    private String surface = "";
+    private String road_environment = "";
 
-    public SurfaceDetails(FlagEncoder encoder) {
-        super(SURFACE);
+    public RoadEnvironmentDetails(FlagEncoder encoder) {
+        super(ROAD_ENVIRONMENT);
         this.encoder = encoder;
     }
 
@@ -43,7 +43,7 @@ public class SurfaceDetails extends AbstractPathDetailsBuilder {
     public boolean isEdgeDifferentToLastEdge(EdgeIteratorState edge) {
         if (edge.getEdge() != edgeId) {
             edgeId = edge.getEdge();
-            surface = encoder.getSurfaceAsString(edge.getFlags());
+            road_environment = encoder.getRoadEnvironmentAsString(edge.getFlags());
             return true;
         }
         return false;
@@ -51,6 +51,6 @@ public class SurfaceDetails extends AbstractPathDetailsBuilder {
 
     @Override
     public Object getCurrentValue() {
-        return this.surface;
+        return this.road_environment;
     }
 }
