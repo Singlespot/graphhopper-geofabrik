@@ -1,14 +1,14 @@
 /*
  *  Licensed to GraphHopper GmbH under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
+ *  license agreements. See the NOTICE file distributed with this work for
  *  additional information regarding copyright ownership.
- * 
- *  GraphHopper GmbH licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
+ *
+ *  GraphHopper GmbH licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except in
  *  compliance with the License. You may obtain a copy of the License at
- * 
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.RoutingAlgorithmFactory;
 import com.graphhopper.routing.RoutingAlgorithmFactoryDecorator;
 import com.graphhopper.routing.util.HintsMap;
-import com.graphhopper.routing.util.TraversalMode;
 import com.graphhopper.routing.weighting.AbstractWeighting;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
@@ -44,9 +43,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.graphhopper.util.Parameters.Landmark.DISABLE;
+import static com.graphhopper.util.Helper.*;
 
 /**
  * This class implements the A*, landmark and triangulation (ALT) decorator.
@@ -90,7 +88,7 @@ public class LMAlgoFactoryDecorator implements RoutingAlgorithmFactoryDecorator 
                 lmSuggestionsLocations.add(loc.trim());
         }
         String lmWeightingsStr = args.get(Landmark.PREPARE + "weightings", "");
-        if (!lmWeightingsStr.isEmpty()) {
+        if (!lmWeightingsStr.isEmpty() && !lmWeightingsStr.equalsIgnoreCase("no")) {
             List<String> tmpLMWeightingList = Arrays.asList(lmWeightingsStr.split(","));
             setWeightingsAsStrings(tmpLMWeightingList);
         }
@@ -152,7 +150,7 @@ public class LMAlgoFactoryDecorator implements RoutingAlgorithmFactoryDecorator 
 
         weightingsAsStrings.clear();
         for (String strWeighting : weightingList) {
-            strWeighting = strWeighting.toLowerCase();
+            strWeighting = toLowerCase(strWeighting);
             strWeighting = strWeighting.trim();
             addWeighting(strWeighting);
         }
@@ -223,8 +221,10 @@ public class LMAlgoFactoryDecorator implements RoutingAlgorithmFactoryDecorator 
 
     @Override
     public RoutingAlgorithmFactory getDecoratedAlgorithmFactory(RoutingAlgorithmFactory defaultAlgoFactory, HintsMap map) {
-        boolean disableLM = map.getBool(DISABLE, false);
-        if (!isEnabled() || disablingAllowed && disableLM)
+        // for now do not allow mixing CH&LM #1082
+        boolean disableCH = map.getBool(Parameters.CH.DISABLE, false);
+        boolean disableLM = map.getBool(Parameters.Landmark.DISABLE, false);
+        if (!isEnabled() || disablingAllowed && disableLM || !disableCH)
             return defaultAlgoFactory;
 
         if (preparations.isEmpty())
@@ -235,7 +235,7 @@ public class LMAlgoFactoryDecorator implements RoutingAlgorithmFactoryDecorator 
                 return new LMRAFactory(p, defaultAlgoFactory);
         }
 
-        // if the initial encoder&weighting has certain properies we could cross query it but for now avoid this
+        // if the initial encoder&weighting has certain properties we could cross query it but for now avoid this
         return defaultAlgoFactory;
     }
 
@@ -284,11 +284,11 @@ public class LMAlgoFactoryDecorator implements RoutingAlgorithmFactoryDecorator 
                     if (plm.loadExisting())
                         return;
 
-                    LOGGER.info(tmpCounter + "/" + getPreparations().size() + " calling LM prepare.doWork for " + plm.getWeighting() + " ... (" + Helper.getMemInfo() + ")");
+                    LOGGER.info(tmpCounter + "/" + getPreparations().size() + " calling LM prepare.doWork for " + plm.getWeighting() + " ... (" + getMemInfo() + ")");
                     prepared.set(true);
                     Thread.currentThread().setName(name);
                     plm.doWork();
-                    properties.put(Landmark.PREPARE + "date." + name, Helper.createFormatter().format(new Date()));
+                    properties.put(Landmark.PREPARE + "date." + name, createFormatter().format(new Date()));
                 }
             }, name);
         }

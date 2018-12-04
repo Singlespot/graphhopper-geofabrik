@@ -1,3 +1,5 @@
+## Licenses
+
 GraphHopper licensed under the Apache license, Version 2.0
 
 Copyright 2012 - 2017 GraphHopper GmbH
@@ -26,11 +28,6 @@ reader-gtfs:
  * com.conveyal:gtfs-lib (BSD 2-clause license)
  * com.google.transit:gtfs-realtime-bindings (Apache license)
 
-reader-json:
-
- * com.bedatadriven:jackson-datatype-jts (Apache license)
- * com.fasterxml.jackson.core:jackson-databind (Apache license)
-
 reader-shp:
  
  * org.geotools:gt-shapefile (LGPL)
@@ -51,3 +48,14 @@ android:
  * android (Apache license)
  * org.mapsforge, LGPL
  * VTM, LGPL
+
+## Data
+
+|source | license | used as default | included in repo |
+|---------|-----------|---------|------|
+|OpenStreetMap data for the road network | [ODBL](https://www.openstreetmap.org/copyright) | yes | yes
+| SRTM elevation | [public domain](https://www2.jpl.nasa.gov/srtm/), [acknowledgement](https://lpdaac.usgs.gov/citing_our_data) | no | yes
+| CGIAR elevation | [allowed usage for GraphHopper](https://graphhopper.com/public/license/CGIAR.txt) | no | no
+| SRTMGL1 elevation | [acknowledgement](https://lpdaac.usgs.gov/citing_our_data) | no | no
+|OpenTopography mirror for SRTMGL1 | [acknowledgement OpenTopoGraphy](http://www.opentopography.org/citations) and [data source](http://opentopo.sdsc.edu/datasetMetadata?otCollectionID=OT.042013.4326.1) + SRTMGL1 | no | no
+| GMTED | [public domain, acknowledgment](https://lta.cr.usgs.gov/citation) | no | no
