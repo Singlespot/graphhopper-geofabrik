@@ -624,7 +624,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     @Override
     public int getSurface(long flags) {
         if (surfaceEncoder == null) {
-            return K_INVALID;
+            return 0;
         }
         return (int) surfaceEncoder.getValue(flags);
     }
@@ -642,7 +642,7 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     @Override
     public int getRoadEnvironment(long flags) {
         if (roadEnvironmentEncoder == null) {
-            return K_INVALID;
+            return 0;
         }
         return (int) roadEnvironmentEncoder.getValue(flags);
     }
