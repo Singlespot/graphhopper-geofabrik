@@ -27,6 +27,9 @@ import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+
+
 /**
  * @author Peter Karich
  */
@@ -36,7 +39,7 @@ public class EncodingManagerTest {
 
     @Test
     public void testCompatibility() {
-        EncodingManager manager = new EncodingManager("car,bike,foot");
+        EncodingManager manager = new EncodingManager("car,bike,foot", 8);
         BikeFlagEncoder bike = (BikeFlagEncoder) manager.getEncoder("bike");
         CarFlagEncoder car = (CarFlagEncoder) manager.getEncoder("car");
         FootFlagEncoder foot = (FootFlagEncoder) manager.getEncoder("foot");
@@ -186,7 +189,8 @@ public class EncodingManagerTest {
 
         BikeFlagEncoder bikeEncoder = new BikeFlagEncoder();
         MountainBikeFlagEncoder mtbEncoder = new MountainBikeFlagEncoder();
-        EncodingManager manager = new EncodingManager(bikeEncoder, mtbEncoder);
+        FlagEncoder[] bikeAndMtb = {bikeEncoder, mtbEncoder};
+        EncodingManager manager = new EncodingManager(Arrays.asList(bikeAndMtb), 8);
 
         // relation code for network rcn is VERY_NICE for bike and PREFER for mountainbike
         osmRel.setTag("route", "bicycle");

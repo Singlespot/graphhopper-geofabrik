@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
  * @author Peter Karich
  */
 public class CarFlagEncoderTest {
-    private final EncodingManager em = new EncodingManager("car,bike,foot");
+    private final EncodingManager em = new EncodingManager("car,bike,foot", 8);
     private final CarFlagEncoder encoder = (CarFlagEncoder) em.getEncoder("car");
 
     @Test

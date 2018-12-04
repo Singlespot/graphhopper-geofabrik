@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
 public class BikeFlagEncoderTest extends AbstractBikeFlagEncoderTester {
     @Override
     protected BikeCommonFlagEncoder createBikeEncoder() {
-        return (BikeCommonFlagEncoder) new EncodingManager("bike,mtb").getEncoder("bike");
+        return (BikeCommonFlagEncoder) new EncodingManager("bike,mtb", 8).getEncoder("bike");
     }
 
     @Test
