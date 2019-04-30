@@ -9,13 +9,13 @@ import com.graphhopper.reader.ReaderNode;
  *
  * @author Michael Reichert
  */
-public interface OSMReaderHook {
-    default public void processNode(ReaderNode node);
+public abstract class OSMReaderHook {
+    public void processNode(ReaderNode node) {
     }
 
     /**
      * Called at the end of OSMReader.addTowerNode
      */
-    default public void addTowerNode(long osmId, double lat, double lon, double ele, int towerId) {
+    public void addTowerNode(long osmId, double lat, double lon, double ele, int towerId) {
     }
 }
