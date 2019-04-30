@@ -630,6 +630,9 @@ public class OSMReader implements DataReader {
         int id = towerIdToMapId(nextTowerId);
         getNodeMap().put(osmId, id);
         nextTowerId++;
+        for (OSMReaderHook h : hooks) {
+            h.addTowerNode(osmId, lat, lon, ele, id);
+        }
         return id;
     }
 
