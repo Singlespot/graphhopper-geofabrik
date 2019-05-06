@@ -71,6 +71,18 @@ public class PrepareRoutingSubnetworks {
         return this;
     }
 
+    public int getMinNetworkSize() {
+        return minNetworkSize;
+    }
+
+    public int getMinOneWayNetworkSize() {
+        return minOneWayNetworkSize;
+    }
+
+    protected GraphHopperStorage getGraphHopperStorage() {
+        return ghStorage;
+    }
+
     public void doWork() {
         if (minNetworkSize <= 0 && minOneWayNetworkSize <= 0)
             return;
@@ -152,7 +164,7 @@ public class PrepareRoutingSubnetworks {
     /**
      * Deletes all but the largest subnetworks.
      */
-    int keepLargeNetworks(PrepEdgeFilter filter, List<IntArrayList> components) {
+    protected int keepLargeNetworks(PrepEdgeFilter filter, List<IntArrayList> components) {
         if (components.size() <= 1)
             return 0;
 
@@ -213,7 +225,7 @@ public class PrepareRoutingSubnetworks {
      *
      * @return number of removed edges
      */
-    int removeEdges(final PrepEdgeFilter bothFilter, List<IntArrayList> components, int min) {
+    protected int removeEdges(final PrepEdgeFilter bothFilter, List<IntArrayList> components, int min) {
         // remove edges determined from nodes but only if less than minimum size
         EdgeExplorer explorer = ghStorage.createEdgeExplorer(bothFilter);
         int removedEdges = 0;
@@ -271,7 +283,7 @@ public class PrepareRoutingSubnetworks {
         return true;
     }
 
-    static class PrepEdgeFilter extends DefaultEdgeFilter {
+    protected static class PrepEdgeFilter extends DefaultEdgeFilter {
 
         public PrepEdgeFilter(FlagEncoder encoder) {
             super(encoder.getAccessEnc(), true, true);
