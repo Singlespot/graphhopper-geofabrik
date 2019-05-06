@@ -259,6 +259,14 @@ public class GraphHopper implements GraphHopperAPI {
         return this;
     }
 
+    public int getMinNetworkSize() {
+        return minNetworkSize;
+    }
+
+    public int getMinOneWayNetworkSize() {
+        return minOneWayNetworkSize;
+    }
+
     public GraphHopper setMinNetworkSize(int minNetworkSize, int minOneWayNetworkSize) {
         this.minNetworkSize = minNetworkSize;
         this.minOneWayNetworkSize = minOneWayNetworkSize;
