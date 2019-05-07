@@ -102,7 +102,7 @@ public class EncodingManager implements EncodedValueLookup {
         return createBuilder(flagEncoders, bytesForEdgeFlags).build();
     }
 
-    private static EncodingManager.Builder createBuilder(List<? extends FlagEncoder> flagEncoders, int bytesForEdgeFlags) {
+    public static EncodingManager.Builder createBuilder(List<? extends FlagEncoder> flagEncoders, int bytesForEdgeFlags) {
         Builder builder = new Builder(bytesForEdgeFlags);
         for (FlagEncoder flagEncoder : flagEncoders) {
             builder.add(flagEncoder);
