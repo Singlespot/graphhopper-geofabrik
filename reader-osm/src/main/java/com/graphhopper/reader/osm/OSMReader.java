@@ -169,6 +169,9 @@ public class OSMReader implements DataReader {
             while ((item = in.getNext()) != null) {
                 if (item.isType(ReaderElement.WAY)) {
                     final ReaderWay way = (ReaderWay) item;
+                    for (OSMReaderHook h : hooks) {
+                        h.preProcessWay(way);
+                    }
                     boolean valid = filterWay(way);
                     if (valid) {
                         LongIndexedContainer wayNodes = way.getNodes();
@@ -267,6 +270,9 @@ public class OSMReader implements DataReader {
             while ((item = in.getNext()) != null) {
                 switch (item.getType()) {
                     case ReaderElement.NODE:
+                        for (OSMReaderHook h : hooks) {
+                            h.beforeProcessNode((ReaderNode) item);
+                        }
                         if (nodeFilter.get(item.getId()) != EMPTY_NODE) {
                             processNode((ReaderNode) item);
                         }
@@ -317,6 +323,13 @@ public class OSMReader implements DataReader {
      * Process properties, encode flags and create edges for the way.
      */
     void processWay(ReaderWay way) {
+        boolean continueWithProcessing = true;
+        for (OSMReaderHook h : hooks) {
+            continueWithProcessing = h.beforeProcessWay(way, continueWithProcessing);
+        }
+        if (!continueWithProcessing) {
+            return;
+        }
         if (way.getNodes().size() < 2)
             return;
 
