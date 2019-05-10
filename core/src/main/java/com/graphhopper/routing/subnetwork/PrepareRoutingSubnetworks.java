@@ -48,17 +48,23 @@ public class PrepareRoutingSubnetworks {
     private final AtomicInteger maxEdgesPerNode = new AtomicInteger(0);
     private final List<FlagEncoder> encoders;
     private final List<BooleanEncodedValue> accessEncList;
+    private final boolean optimize;
     private int minNetworkSize = 200;
     private int minOneWayNetworkSize = 0;
     private int subnetworks = -1;
 
-    public PrepareRoutingSubnetworks(GraphHopperStorage ghStorage, List<FlagEncoder> encoders) {
+    public PrepareRoutingSubnetworks(GraphHopperStorage ghStorage, List<FlagEncoder> encoders, boolean optimize) {
         this.ghStorage = ghStorage;
         this.encoders = encoders;
         this.accessEncList = new ArrayList<>();
         for (FlagEncoder flagEncoder : encoders) {
             accessEncList.add(flagEncoder.getAccessEnc());
         }
+        this.optimize = optimize;
+    }
+
+    public PrepareRoutingSubnetworks(GraphHopperStorage ghStorage, List<FlagEncoder> encoders) {
+        this(ghStorage, encoders, true);
     }
 
     public PrepareRoutingSubnetworks setMinNetworkSize(int minNetworkSize) {
@@ -103,10 +109,14 @@ public class PrepareRoutingSubnetworks {
 
         markNodesRemovedIfUnreachable();
 
-        logger.info("optimize to remove subnetworks (" + subnetworks + "), "
-                + "unvisited-dead-end-nodes (" + unvisitedDeadEnds + "), "
-                + "maxEdges/node (" + maxEdgesPerNode.get() + ")");
-        ghStorage.optimize();
+        if (optimize) {
+            logger.info("optimize to remove subnetworks (" + subnetworks + "), "
+                    + "unvisited-dead-end-nodes (" + unvisitedDeadEnds + "), "
+                    + "maxEdges/node (" + maxEdgesPerNode.get() + ")");
+            ghStorage.optimize();
+        } else {
+            logger.info("skipping optimization: subnetworks ({}), unvisited-dead-end-nodes ({}), maxEdges/node ({})", subnetworks, unvisitedDeadEnds, maxEdgesPerNode.get());
+        }
     }
 
     public int getMaxSubnetworks() {
