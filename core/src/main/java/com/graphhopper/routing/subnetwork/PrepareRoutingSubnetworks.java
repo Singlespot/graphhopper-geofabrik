@@ -45,13 +45,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PrepareRoutingSubnetworks {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final GraphHopperStorage ghStorage;
-    private final AtomicInteger maxEdgesPerNode = new AtomicInteger(0);
+    protected final AtomicInteger maxEdgesPerNode = new AtomicInteger(0);
     private final List<FlagEncoder> encoders;
     private final List<BooleanEncodedValue> accessEncList;
-    private final boolean optimize;
+    protected final boolean optimize;
     private int minNetworkSize = 200;
     private int minOneWayNetworkSize = 0;
-    private int subnetworks = -1;
+    protected int subnetworks = -1;
 
     public PrepareRoutingSubnetworks(GraphHopperStorage ghStorage, List<FlagEncoder> encoders, boolean optimize) {
         this.ghStorage = ghStorage;
@@ -83,6 +83,10 @@ public class PrepareRoutingSubnetworks {
 
     public int getMinOneWayNetworkSize() {
         return minOneWayNetworkSize;
+    }
+
+    public List<FlagEncoder> getEncoders() {
+        return encoders;
     }
 
     protected GraphHopperStorage getGraphHopperStorage() {
@@ -126,7 +130,7 @@ public class PrepareRoutingSubnetworks {
     /**
      * This method finds the double linked components according to the specified filter.
      */
-    List<IntArrayList> findSubnetworks(PrepEdgeFilter filter) {
+    protected List<IntArrayList> findSubnetworks(PrepEdgeFilter filter) {
         final BooleanEncodedValue accessEnc = filter.getAccessEnc();
         final EdgeExplorer explorer = ghStorage.createEdgeExplorer(filter);
         int locs = ghStorage.getNodes();
@@ -217,7 +221,7 @@ public class PrepareRoutingSubnetworks {
      *
      * @return number of removed edges
      */
-    int removeDeadEndUnvisitedNetworks(final PrepEdgeFilter bothFilter) {
+    protected int removeDeadEndUnvisitedNetworks(final PrepEdgeFilter bothFilter) {
         StopWatch sw = new StopWatch(bothFilter.getAccessEnc() + " findComponents").start();
         final EdgeFilter outFilter = DefaultEdgeFilter.outEdges(bothFilter.getAccessEnc());
 
@@ -263,7 +267,7 @@ public class PrepareRoutingSubnetworks {
     /**
      * Removes nodes if all edges are not accessible. I.e. removes zero degree nodes.
      */
-    void markNodesRemovedIfUnreachable() {
+    protected void markNodesRemovedIfUnreachable() {
         EdgeExplorer edgeExplorer = ghStorage.createEdgeExplorer();
         for (int nodeIndex = 0; nodeIndex < ghStorage.getNodes(); nodeIndex++) {
             if (detectNodeRemovedForAllEncoders(edgeExplorer, nodeIndex))
@@ -293,7 +297,7 @@ public class PrepareRoutingSubnetworks {
         return true;
     }
 
-    protected static class PrepEdgeFilter extends DefaultEdgeFilter {
+    public static class PrepEdgeFilter extends DefaultEdgeFilter {
 
         public PrepEdgeFilter(FlagEncoder encoder) {
             super(encoder.getAccessEnc(), true, true);
