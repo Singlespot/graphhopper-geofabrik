@@ -18,64 +18,87 @@
 package com.graphhopper.storage;
 
 import com.graphhopper.routing.util.EncodingManager;
+import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.weighting.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
+import static com.graphhopper.routing.weighting.TurnCostProvider.NO_TURN_COST_PROVIDER;
+import static com.graphhopper.routing.weighting.Weighting.INFINITE_U_TURN_COSTS;
+
 /**
- * For now this is just a helper class to quickly create a {@link GraphHopperStorage}
- * <p>
+ * Used to build {@link GraphHopperStorage}
  *
  * @author Peter Karich
+ * @author easbar
  */
 public class GraphBuilder {
     private final EncodingManager encodingManager;
-    private String location;
-    private boolean mmap;
-    private boolean store;
+    private Directory dir = new RAMDirectory();
     private boolean elevation;
     private boolean turnCosts;
-    private long byteCapacity = 100;
-    private List<CHProfile> chProfiles = Collections.emptyList();
+    private long bytes = 100;
+    private int segmentSize = -1;
+    private List<String> chConfigStrings = new ArrayList<>();
+    private List<CHConfig> chConfigs = new ArrayList<>();
+
+    public static GraphBuilder start(EncodingManager encodingManager) {
+        return new GraphBuilder(encodingManager);
+    }
 
     public GraphBuilder(EncodingManager encodingManager) {
         this.encodingManager = encodingManager;
+        this.turnCosts = encodingManager.needsTurnCostsSupport();
     }
 
     /**
-     * This method enables creating CHGraphs with the specified CHProfiles
+     * Convenience method to set the CH profiles using a string representation. This is convenient if you want to add
+     * edge-based {@link CHConfig}s, because otherwise when using {@link #setCHConfigs} you first have to
+     * {@link #build()} the {@link GraphHopperStorage} to obtain a {@link TurnCostStorage} to be able to create the
+     * {@link Weighting} you need for the {@link CHConfig} to be added...
+     * todo: Currently this only supports a few weightings with limited extra options. The reason is that here the
+     * same should happen as in the 'real' GraphHopper graph, reading the real config, but this is likely to change
+     * soon.
      */
-    public GraphBuilder setCHProfiles(List<CHProfile> chProfiles) {
-        if (chProfiles.size() != new HashSet<>(chProfiles).size()) {
-            throw new IllegalArgumentException("Given CH profiles contain duplicates, given: " + chProfiles);
-        }
-        this.chProfiles = chProfiles;
+    public GraphBuilder setCHConfigStrings(String... profileStrings) {
+        this.chConfigStrings = Arrays.asList(profileStrings);
         return this;
     }
 
-    public GraphBuilder setCHProfiles(CHProfile... chProfiles) {
-        return setCHProfiles(Arrays.asList(chProfiles));
-    }
-
-    public GraphBuilder setLocation(String location) {
-        this.location = location;
+    public GraphBuilder setCHConfigs(List<CHConfig> chConfigs) {
+        this.chConfigs = chConfigs;
         return this;
     }
 
-    public GraphBuilder setStore(boolean store) {
-        this.store = store;
+    public GraphBuilder setCHConfigs(CHConfig... chConfigs) {
+        return setCHConfigs(new ArrayList<>(Arrays.asList(chConfigs)));
+    }
+
+    public GraphBuilder setDir(Directory dir) {
+        this.dir = dir;
         return this;
     }
 
-    public GraphBuilder setMmap(boolean mmap) {
-        this.mmap = mmap;
-        return this;
+    public GraphBuilder setMMap(String location) {
+        return setDir(new MMapDirectory(location));
     }
 
-    public GraphBuilder setExpectedSize(byte cap) {
-        this.byteCapacity = cap;
+    public GraphBuilder setRAM() {
+        return setDir(new RAMDirectory());
+    }
+
+    public GraphBuilder setRAM(String location) {
+        return setDir(new RAMDirectory(location));
+    }
+
+    public GraphBuilder setRAM(String location, boolean store) {
+        return setDir(new RAMDirectory(location, store));
+    }
+
+    public GraphBuilder setBytes(long bytes) {
+        this.bytes = bytes;
         return this;
     }
 
@@ -89,15 +112,9 @@ public class GraphBuilder {
         return this;
     }
 
-    public boolean hasElevation() {
-        return elevation;
-    }
-
-    /**
-     * Creates a CHGraph
-     */
-    public CHGraph chGraphCreate(CHProfile chProfile) {
-        return setCHProfiles(chProfile).create().getCHGraph();
+    public GraphBuilder setSegmentSize(int segmentSize) {
+        this.segmentSize = segmentSize;
+        return this;
     }
 
     /**
@@ -106,34 +123,59 @@ public class GraphBuilder {
      * {@link #create} directly.
      */
     public GraphHopperStorage build() {
-        Directory dir = mmap ?
-                new MMapDirectory(location) :
-                new RAMDirectory(location, store);
-
-        GraphExtension graphExtension = encodingManager.needsTurnCostsSupport() || turnCosts ?
-                new TurnCostExtension() :
-                new TurnCostExtension.NoOpExtension();
-
-        return chProfiles.isEmpty() ?
-                new GraphHopperStorage(dir, encodingManager, elevation, graphExtension) :
-                new GraphHopperStorage(chProfiles, dir, encodingManager, elevation, graphExtension);
+        GraphHopperStorage ghStorage = new GraphHopperStorage(dir, encodingManager, elevation, turnCosts, segmentSize);
+        addCHProfilesFromStrings(ghStorage.getTurnCostStorage());
+        ghStorage.addCHGraphs(chConfigs);
+        return ghStorage;
     }
 
     /**
      * Default graph is a {@link GraphHopperStorage} with an in memory directory and disabled storing on flush.
      */
     public GraphHopperStorage create() {
-        return build().create(byteCapacity);
+        return build().create(bytes);
     }
 
-    /**
-     * @throws IllegalStateException if not loadable.
-     */
-    public GraphHopperStorage load() {
-        GraphHopperStorage gs = build();
-        if (!gs.loadExisting()) {
-            throw new IllegalStateException("Cannot load graph " + location);
+    private void addCHProfilesFromStrings(TurnCostStorage turnCostStorage) {
+        for (String profileString : chConfigStrings) {
+            String[] split = profileString.split("\\|");
+            if (split.length < 4) {
+                throw new IllegalArgumentException("Invalid CH profile string: " + profileString + ". " +
+                        "Expected something like: 'my_profile|car|fastest|node' or 'your_profile|bike|shortest|edge|40'");
+            }
+            String profileName = split[0];
+            FlagEncoder encoder = encodingManager.getEncoder(split[1]);
+            String weightingStr = split[2];
+            String edgeOrNode = split[3];
+            int uTurnCostsInt = INFINITE_U_TURN_COSTS;
+            if (split.length == 5) {
+                uTurnCostsInt = Integer.parseInt(split[4]);
+            }
+            TurnCostProvider turnCostProvider;
+            boolean edgeBased = false;
+            if (edgeOrNode.equals("edge")) {
+                if (turnCostStorage == null) {
+                    throw new IllegalArgumentException("For edge-based CH profiles you need a turn cost storage");
+                }
+                turnCostProvider = new DefaultTurnCostProvider(encoder, turnCostStorage, uTurnCostsInt);
+                edgeBased = true;
+            } else if (edgeOrNode.equals("node")) {
+                turnCostProvider = NO_TURN_COST_PROVIDER;
+            } else {
+                throw new IllegalArgumentException("Invalid CH profile string: " + profileString);
+            }
+            Weighting weighting;
+            if (weightingStr.equalsIgnoreCase("fastest")) {
+                weighting = new FastestWeighting(encoder, turnCostProvider);
+            } else if (weightingStr.equalsIgnoreCase("shortest")) {
+                weighting = new ShortestWeighting(encoder, turnCostProvider);
+            } else if (weightingStr.equalsIgnoreCase("short_fastest")) {
+                weighting = new ShortFastestWeighting(encoder, 0.1, turnCostProvider);
+            } else {
+                throw new IllegalArgumentException("Weighting not supported using this method, maybe you can use setCHProfile instead: " + weightingStr);
+            }
+            chConfigs.add(new CHConfig(profileName, weighting, edgeBased));
         }
-        return gs;
+
     }
 }

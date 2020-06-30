@@ -23,11 +23,10 @@ import com.conveyal.gtfs.model.Stop;
 import com.conveyal.gtfs.model.StopTime;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.transit.realtime.GtfsRealtime;
-import com.graphhopper.PathWrapper;
+import com.graphhopper.ResponsePath;
 import com.graphhopper.Trip;
 import com.graphhopper.gtfs.fare.Fares;
 import com.graphhopper.routing.InstructionsFromEdges;
-import com.graphhopper.routing.profiles.Roundabout;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.util.*;
@@ -45,7 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.graphhopper.reader.gtfs.Label.reverseEdges;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 class TripFromLabel {
@@ -61,7 +59,7 @@ class TripFromLabel {
         this.realtimeFeed = realtimeFeed;
     }
 
-    PathWrapper createPathWrapper(Translation tr, PointList waypoints, List<Trip.Leg> legs) {
+    ResponsePath createPathWrapper(Translation tr, PointList waypoints, List<Trip.Leg> legs) {
         if (legs.size() > 1 && legs.get(0) instanceof Trip.WalkLeg) {
             final Trip.WalkLeg accessLeg = (Trip.WalkLeg) legs.get(0);
             legs.set(0, new Trip.WalkLeg(accessLeg.departureLocation, new Date(legs.get(1).getDepartureTime().getTime() - (accessLeg.getArrivalTime().getTime() - accessLeg.getDepartureTime().getTime())),
@@ -74,7 +72,7 @@ class TripFromLabel {
                     new Date(legs.get(legs.size() - 2).getArrivalTime().getTime() + (egressLeg.getArrivalTime().getTime() - egressLeg.getDepartureTime().getTime()))));
         }
 
-        PathWrapper path = new PathWrapper();
+        ResponsePath path = new ResponsePath();
         path.setWaypoints(waypoints);
 
         path.getLegs().addAll(legs);
@@ -120,19 +118,6 @@ class TripFromLabel {
         final List<List<Label.Transition>> partitions = getPartitions(transitions);
         final List<Trip.Leg> legs = getLegs(tr, queryGraph, weighting, partitions);
         return legs;
-    }
-
-    List<Label.Transition> getTransitions(boolean arriveBy, PtFlagEncoder encoder, Graph queryGraph, Label solution) {
-        List<Label.Transition> transitions = new ArrayList<>();
-        if (arriveBy) {
-            reverseEdges(solution, queryGraph, encoder, false)
-                    .forEach(transitions::add);
-        } else {
-            reverseEdges(solution, queryGraph, encoder, true)
-                    .forEach(transitions::add);
-            Collections.reverse(transitions);
-        }
-        return transitions;
     }
 
     private List<List<Label.Transition>> getPartitions(List<Label.Transition> transitions) {
@@ -370,8 +355,8 @@ class TripFromLabel {
             return result;
         } else {
             InstructionList instructions = new InstructionList(tr);
-            InstructionsFromEdges instructionsFromEdges = new InstructionsFromEdges(path.get(1).edge.edgeIteratorState.getBaseNode(), graph,
-                    weighting, weighting.getFlagEncoder(), weighting.getFlagEncoder().getBooleanEncodedValue(Roundabout.KEY), graph.getNodeAccess(), tr, instructions);
+            InstructionsFromEdges instructionsFromEdges = new InstructionsFromEdges(graph,
+                    weighting, weighting.getFlagEncoder(), tr, instructions);
             int prevEdgeId = -1;
             for (int i = 1; i < path.size(); i++) {
                 if (path.get(i).edge.edgeType != GtfsStorage.EdgeType.HIGHWAY) {
@@ -402,8 +387,8 @@ class TripFromLabel {
         List<Coordinate> coordinates = new ArrayList<>();
         final Iterator<Label.Transition> iterator = transitions.iterator();
         iterator.next();
-        coordinates.addAll(toCoordinateArray(iterator.next().edge.edgeIteratorState.fetchWayGeometry(3)));
-        iterator.forEachRemaining(transition -> coordinates.addAll(toCoordinateArray(transition.edge.edgeIteratorState.fetchWayGeometry(2))));
+        coordinates.addAll(toCoordinateArray(iterator.next().edge.edgeIteratorState.fetchWayGeometry(FetchMode.ALL)));
+        iterator.forEachRemaining(transition -> coordinates.addAll(toCoordinateArray(transition.edge.edgeIteratorState.fetchWayGeometry(FetchMode.PILLAR_AND_ADJ))));
         return geometryFactory.createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
     }
 

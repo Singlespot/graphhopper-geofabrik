@@ -1,8 +1,8 @@
 package com.graphhopper.routing.util;
 
-import com.graphhopper.routing.profiles.EnumEncodedValue;
-import com.graphhopper.routing.profiles.RoadClass;
-import com.graphhopper.routing.profiles.RoadEnvironment;
+import com.graphhopper.routing.ev.EnumEncodedValue;
+import com.graphhopper.routing.ev.RoadClass;
+import com.graphhopper.routing.ev.RoadEnvironment;
 import com.graphhopper.storage.IntsRef;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.GHUtility;
@@ -23,7 +23,7 @@ public class SnapPreventionEdgeFilterTest {
                 return true;
             }
         };
-        EncodingManager em = GHUtility.addDefaultEncodedValues(new EncodingManager.Builder(4)).build();
+        EncodingManager em = new EncodingManager.Builder().build();
         EnumEncodedValue<RoadClass> rcEnc = em.getEnumEncodedValue(RoadClass.KEY, RoadClass.class);
         EnumEncodedValue<RoadEnvironment> reEnc = em.getEnumEncodedValue(RoadEnvironment.KEY, RoadEnvironment.class);
         SnapPreventionEdgeFilter filter = new SnapPreventionEdgeFilter(trueFilter, rcEnc, reEnc, Arrays.asList("motorway", "ferry"));
