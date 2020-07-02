@@ -76,6 +76,14 @@ public class PrepareRoutingSubnetworks {
         return minNetworkSize;
     }
 
+    protected List<PrepareJob> getPrepareJobs() {
+        return prepareJobs;
+    }
+
+     protected GraphHopperStorage getGraphHopperStorage() {
+        return ghStorage;
+    }
+
     public void doWork() {
         if (minNetworkSize <= 0) {
             logger.info("Skipping subnetwork removal: prepare.min_network_size: " + minNetworkSize);
@@ -99,7 +107,7 @@ public class PrepareRoutingSubnetworks {
         }
     }
 
-    private void optimize() {
+    protected void optimize() {
         StopWatch sw = new StopWatch().start();
         ghStorage.optimize();
         logger.info("Optimized storage after subnetwork removal, took: " + sw.stop().getSeconds() + "s," + Helper.getMemInfo());
@@ -112,7 +120,7 @@ public class PrepareRoutingSubnetworks {
      *
      * @return number of removed edges
      */
-    int removeSmallSubNetworks(BooleanEncodedValue accessEnc, TurnCostProvider turnCostProvider) {
+    protected int removeSmallSubNetworks(BooleanEncodedValue accessEnc, TurnCostProvider turnCostProvider) {
         if (turnCostProvider == null)
             return removeSmallSubNetworksNodeBased(accessEnc);
         else
@@ -183,7 +191,7 @@ public class PrepareRoutingSubnetworks {
         return removedEdges;
     }
 
-    private int blockEdgesForNode(EdgeExplorer explorer, BooleanEncodedValue accessEnc, int node) {
+    protected int blockEdgesForNode(EdgeExplorer explorer, BooleanEncodedValue accessEnc, int node) {
         int removedEdges = 0;
         EdgeIterator edge = explorer.setBaseNode(node);
         while (edge.next()) {
@@ -320,6 +328,18 @@ public class PrepareRoutingSubnetworks {
             this.name = name;
             this.accessEnc = accessEnc;
             this.turnCostProvider = turnCostProvider;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public BooleanEncodedValue getAccessEnc() {
+            return accessEnc;
+        }
+
+        public TurnCostProvider getTurnCostProvider() {
+            return turnCostProvider;
         }
 
         @Override
