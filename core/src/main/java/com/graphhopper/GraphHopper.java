@@ -1004,7 +1004,7 @@ public class GraphHopper implements GraphHopperAPI {
         return createRouter().route(request);
     }
 
-    private Router createRouter() {
+    public Router createRouter() {
         if (ghStorage == null || !fullyLoaded)
             throw new IllegalStateException("Do a successful call to load or importOrLoad before routing");
         if (ghStorage.isClosed())

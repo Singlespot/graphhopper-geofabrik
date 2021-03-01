@@ -247,7 +247,7 @@ public class Router {
         }
     }
 
-    private PathCalculator createPathCalculator(QueryGraph queryGraph, Profile profile, AlgorithmOptions algoOpts, boolean disableCH, boolean disableLM) {
+    public PathCalculator createPathCalculator(QueryGraph queryGraph, Profile profile, AlgorithmOptions algoOpts, boolean disableCH, boolean disableLM) {
         if (chEnabled && !disableCH) {
             PMap opts = new PMap(algoOpts.getHints());
             opts.putObject(ALGORITHM, algoOpts.getAlgorithm());
