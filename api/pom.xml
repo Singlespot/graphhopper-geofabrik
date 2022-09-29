@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>graphhopper-api</artifactId>
     <packaging>jar</packaging>
-    <version>2.0-osm-reader-callbacks</version>
+    <version>3.0-osm-reader-callbacks-SNAPSHOT</version>
     <name>GraphHopper API</name>
     <description>Use the GraphHopper routing engine as a web-service</description>
 
     <parent>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-parent</artifactId>
-        <version>2.0-osm-reader-callbacks</version>
+        <version>3.0-osm-reader-callbacks-SNAPSHOT</version>
     </parent>
 
     <dependencies>
