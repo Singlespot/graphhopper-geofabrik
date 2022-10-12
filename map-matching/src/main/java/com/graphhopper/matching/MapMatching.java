@@ -87,6 +87,11 @@ public class MapMatching {
     private Weighting weighting;
     private final BooleanEncodedValue inSubnetworkEnc;
     private QueryGraph queryGraph;
+    private int matchedUpTo = -1;
+
+    // number of points after removing duplicates and points from the input having a
+    // distance shorter than the measurement accuracy
+    private int pointCount = -1;
 
     public MapMatching(GraphHopper graphHopper, PMap hints) {
         this.locationIndex = (LocationIndexTree) graphHopper.getLocationIndex();
@@ -147,6 +152,22 @@ public class MapMatching {
         this.maxVisitedNodes = hints.getInt(Parameters.Routing.MAX_VISITED_NODES, Integer.MAX_VALUE);
     }
 
+    public boolean matchingAttempted() {
+        return matchedUpTo >= 0;
+    }
+
+    public int getSucessfullyMatchedPoints() {
+        return matchedUpTo;
+    }
+
+    public int getPointCount() {
+        return pointCount;
+    }
+
+    public boolean hasPointsToBeMatched() {
+        return matchedUpTo < getPointCount();
+    }
+
     /**
      * Beta parameter of the exponential distribution for modeling transition
      * probabilities.
@@ -163,7 +184,25 @@ public class MapMatching {
         this.measurementErrorSigma = measurementErrorSigma;
     }
 
+    /**
+     * This method does the actual map matching.
+     * <p>
+     *
+     * @param gpxList the input list with GPX points which should match to edges
+     *                of the graph specified in the constructor
+     */
     public MatchResult match(List<Observation> observations) {
+        return match(observations, true);
+    }
+
+    /**
+     * This method does the actual map matching.
+     * <p>
+     *
+     * @param gpxList the input list with GPX points which should match to edges
+     *                of the graph specified in the constructor
+     */
+    public MatchResult match(List<Observation> observations, boolean throwGapException) {
         List<Observation> filteredObservations = filterObservations(observations);
 
         // Snap observations to links. Generates multiple candidate snaps per observation.
@@ -180,8 +219,9 @@ public class MapMatching {
         // Snap + direction).
         List<ObservationWithCandidateStates> timeSteps = createTimeSteps(filteredObservations, snapsPerObservation);
 
+        pointCount = timeSteps.size();
         // Compute the most likely sequence of map matching candidates:
-        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps);
+        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps, throwGapException);
 
         List<EdgeIteratorState> path = seq.stream().filter(s1 -> s1.transitionDescriptor != null).flatMap(s1 -> s1.transitionDescriptor.calcEdges().stream()).collect(Collectors.toList());
 
@@ -316,6 +356,10 @@ public class MapMatching {
      * Computes the most likely state sequence for the observations.
      */
     private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps) {
+        return computeViterbiSequence(timeSteps, true);
+    }
+
+    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean throwException) {
         final HmmProbabilities probabilities = new HmmProbabilities(measurementErrorSigma, transitionProbabilityBeta);
         final ViterbiAlgorithm<State, Observation, Path> viterbi = new ViterbiAlgorithm<>();
 
@@ -353,13 +397,22 @@ public class MapMatching {
                         roadPaths);
             }
             if (viterbi.isBroken()) {
-                fail(timeStepCounter, prevTimeStep, timeStep);
+                if (throwException) {
+                    fail(timeStepCounter, prevTimeStep, timeStep);
+                } else {
+                    // Set matchedUpTo to current timeStepCounter because calling the map matching
+                    // a second time should start with that step (and not run an unlimited number
+                    // of unsuccessful attempts.
+                    matchedUpTo = timeStepCounter;
+                    return viterbi.computeMostLikelySequence();
+                }
             }
 
             timeStepCounter++;
             prevTimeStep = timeStep;
         }
 
+        matchedUpTo = timeStepCounter;
         return viterbi.computeMostLikelySequence();
     }
 
