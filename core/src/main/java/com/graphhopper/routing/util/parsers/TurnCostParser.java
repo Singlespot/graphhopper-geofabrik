@@ -18,6 +18,7 @@
 package com.graphhopper.routing.util.parsers;
 
 import com.graphhopper.reader.OSMTurnRelation;
+import com.graphhopper.routing.ev.DecimalEncodedValue;
 import com.graphhopper.routing.ev.EncodedValue;
 import com.graphhopper.routing.ev.EncodedValueLookup;
 import com.graphhopper.storage.Graph;
@@ -30,6 +31,11 @@ import java.util.List;
  */
 public interface TurnCostParser {
     String getName();
+
+    /**
+     * Return turn cost encoder belonging to this parser.
+     */
+    public DecimalEncodedValue getTurnCostEnc();
 
     void createTurnCostEncodedValues(EncodedValueLookup lookup, List<EncodedValue> registerNewEncodedValue);
 

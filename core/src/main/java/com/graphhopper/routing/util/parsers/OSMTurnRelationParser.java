@@ -53,7 +53,8 @@ public class OSMTurnRelationParser implements TurnCostParser {
     }
 
     // for test only
-    DecimalEncodedValue getTurnCostEnc() {
+    @Override
+    public DecimalEncodedValue getTurnCostEnc() {
         return turnCostEnc;
     }
 

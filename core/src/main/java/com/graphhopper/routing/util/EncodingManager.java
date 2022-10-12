@@ -128,6 +128,10 @@ public class EncodingManager implements EncodedValueLookup {
         relationTagParsers.clear();
     }
 
+    public Map<String, TurnCostParser> getTurnCostParsers() {
+        return turnCostParsers;
+    }
+
     public static class Builder {
         private EncodingManager em;
         private DateRangeParser dateRangeParser;
