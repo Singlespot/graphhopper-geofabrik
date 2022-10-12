@@ -98,7 +98,7 @@ public class GraphHopper implements GraphHopperAPI {
     // for index
     private LocationIndex locationIndex;
     private int preciseIndexResolution = 300;
-    private int maxRegionSearch = 4;
+    protected int maxRegionSearch = 4;
     // for prepare
     private int minNetworkSize = 200;
     // for LM
@@ -158,6 +158,11 @@ public class GraphHopper implements GraphHopperAPI {
      */
     protected int getWorkerThreads() {
         return dataReaderWorkerThreads;
+    }
+
+    protected void setWorkerThreads(int threads) {
+        ensureNotLoaded();
+        dataReaderWorkerThreads = threads;
     }
 
     /**
@@ -292,12 +297,20 @@ public class GraphHopper implements GraphHopperAPI {
         return this;
     }
 
+    protected boolean getSmoothElevation() {
+        return smoothElevation;
+    }
+
     /**
      * Sets the distance distance between elevation samples on long edges
      */
     public GraphHopper setLongEdgeSamplingDistance(double longEdgeSamplingDistance) {
         this.longEdgeSamplingDistance = longEdgeSamplingDistance;
         return this;
+    }
+
+    protected double getLongEdgeSamplingDistance() {
+        return longEdgeSamplingDistance;
     }
 
     /**
