@@ -82,6 +82,7 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
     protected long zeroCounter = 0;
     protected PillarInfo pillarInfo;
     private List<OSMReaderHook> hooks;
+    private List<PostProcessingTask> postProcessingTasks;
     private long locations;
     private final EncodingManager encodingManager;
     private int workerThreads = 2;
@@ -117,6 +118,7 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
         this.nodeAccess = graph.getNodeAccess();
         this.encodingManager = ghStorage.getEncodingManager();
         this.hooks = new LinkedList<OSMReaderHook>();
+        this.postProcessingTasks = new LinkedList<PostProcessingTask>();
 
         osmNodeIdToInternalNodeMap = new GHLongIntBTree(200);
         osmNodeIdToNodeFlagsMap = new GHLongLongHashMap(200, .5f);
@@ -131,6 +133,10 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
 
     public void register(OSMReaderHook hook) {
         this.hooks.add(hook);
+    }
+
+    public void register(PostProcessingTask task) {
+        this.postProcessingTasks.add(task);
     }
 
     public void readGraph() throws IOException {
@@ -310,6 +316,9 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
             throw new RuntimeException("Couldn't process file " + osmFile + ", error: " + ex.getMessage(), ex);
         }
 
+        for (PostProcessingTask t : postProcessingTasks) {
+            t.run();
+        }
         finishedReading();
         if (graph.getNodes() == 0)
             throw new RuntimeException("Graph after reading OSM must not be empty. Read " + counter + " items and " + locations + " locations");
