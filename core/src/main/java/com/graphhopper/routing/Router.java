@@ -182,7 +182,7 @@ public class Router {
             throw new IllegalArgumentException("When using `custom_model` do not use `block_area`. Use `areas` in the custom model instead");
     }
 
-    protected Solver createSolver(GHRequest request) {
+    public Solver createSolver(GHRequest request) {
         final boolean disableCH = getDisableCH(request.getHints());
         final boolean disableLM = getDisableLM(request.getHints());
         if (chEnabled && !disableCH) {
@@ -410,7 +410,7 @@ public class Router {
                 throw new IllegalArgumentException("The max_visited_nodes parameter has to be below or equal to:" + routerConfig.getMaxVisitedNodes());
         }
 
-        private void init() {
+        public void init() {
             profile = getProfile();
             checkProfileCompatibility();
             weighting = createWeighting();
@@ -439,11 +439,11 @@ public class Router {
 
         protected abstract Weighting createWeighting();
 
-        protected EdgeFilter getSnapFilter() {
+        public EdgeFilter getSnapFilter() {
             return new DefaultSnapFilter(weighting, lookup.getBooleanEncodedValue(Subnetwork.key(profile.getName())));
         }
 
-        protected abstract PathCalculator createPathCalculator(QueryGraph queryGraph);
+        public abstract PathCalculator createPathCalculator(QueryGraph queryGraph);
 
         private List<String> getTurnCostProfiles() {
             List<String> turnCostProfiles = new ArrayList<>();
@@ -499,7 +499,7 @@ public class Router {
         }
 
         @Override
-        protected PathCalculator createPathCalculator(QueryGraph queryGraph) {
+        public PathCalculator createPathCalculator(QueryGraph queryGraph) {
             PMap opts = new PMap(request.getHints());
             opts.putObject(ALGORITHM, request.getAlgorithm());
             opts.putObject(MAX_VISITED_NODES, getMaxVisitedNodes(request.getHints()));
@@ -551,7 +551,7 @@ public class Router {
         }
 
         @Override
-        protected FlexiblePathCalculator createPathCalculator(QueryGraph queryGraph) {
+        public FlexiblePathCalculator createPathCalculator(QueryGraph queryGraph) {
             RoutingAlgorithmFactory algorithmFactory = new RoutingAlgorithmFactorySimple();
             return new FlexiblePathCalculator(queryGraph, algorithmFactory, weighting, getAlgoOpts());
         }
@@ -602,7 +602,7 @@ public class Router {
         }
 
         @Override
-        protected FlexiblePathCalculator createPathCalculator(QueryGraph queryGraph) {
+        public FlexiblePathCalculator createPathCalculator(QueryGraph queryGraph) {
             // for now do not allow mixing CH&LM #1082,#1889
             LandmarkStorage landmarkStorage = landmarks.get(profile.getName());
             if (landmarkStorage == null)
