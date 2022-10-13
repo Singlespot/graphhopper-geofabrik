@@ -187,23 +187,29 @@ public class MapMatching {
     /**
      * This method does the actual map matching.
      * <p>
+     * It will throw an exception if a segment of the input list cannot be matched.
      *
      * @param gpxList the input list with GPX points which should match to edges
      *                of the graph specified in the constructor
      */
     public MatchResult match(List<Observation> observations) {
-        return match(observations, true);
+        return match(observations, true, 0);
     }
 
     /**
      * This method does the actual map matching.
      * <p>
+     * It will start at the provided index.
      *
-     * @param gpxList the input list with GPX points which should match to edges
+     * @param gpxList The input list with GPX points which should match to edges
      *                of the graph specified in the constructor
+     * @param throwGapException Whether to throw an exception if a segment cannot be matched
+     * @param offset Offset to start matching at. This value will be stored and available
+     *               using getSuccessfullyMatchedPoints().
      */
-    public MatchResult match(List<Observation> observations, boolean throwGapException) {
-        List<Observation> filteredObservations = filterObservations(observations);
+    public MatchResult match(List<Observation> observations, boolean throwGapException, int offset) {
+        List<Observation> observationSubList = observations.subList(offset, observations.size());
+        List<Observation> filteredObservations = filterObservations(observationSubList);
 
         // Snap observations to links. Generates multiple candidate snaps per observation.
         List<Collection<Snap>> snapsPerObservation = filteredObservations.stream()
