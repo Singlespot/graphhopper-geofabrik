@@ -271,65 +271,6 @@ public class Router {
         return ghRsp;
     }
 
-//<<<<<<< HEAD
-//    private Weighting createWeighting(Profile profile, PMap requestHints, List<GHPoint> points, boolean forCH) {
-//        if (forCH) {
-//            // todo: do not allow things like short_fastest.distance_factor or u_turn_costs unless CH is disabled
-//            // and only under certain conditions for LM
-//
-//            // the request hints are ignored for CH as we cannot change the profile after the preparation like this.
-//            // the weighting here has to be created the same way as we did when we created the weighting for the preparation
-//            return weightingFactory.createWeighting(profile, new PMap(), false);
-//        } else {
-//            Weighting weighting = weightingFactory.createWeighting(profile, requestHints, false);
-//            if (requestHints.has(Parameters.Routing.BLOCK_AREA)) {
-//                FlagEncoder encoder = encodingManager.getEncoder(profile.getVehicle());
-//                GraphEdgeIdFinder.BlockArea blockArea = GraphEdgeIdFinder.createBlockArea(ghStorage, locationIndex,
-//                        points, requestHints, DefaultEdgeFilter.allEdges(encoder));
-//                weighting = new BlockAreaWeighting(weighting, blockArea);
-//            }
-//            return weighting;
-//        }
-//    }
-//
-//    public PathCalculator createPathCalculator(QueryGraph queryGraph, Profile profile, AlgorithmOptions algoOpts, boolean disableCH, boolean disableLM) {
-//        if (chEnabled && !disableCH) {
-//            PMap opts = new PMap(algoOpts.getHints());
-//            opts.putObject(ALGORITHM, algoOpts.getAlgorithm());
-//            opts.putObject(MAX_VISITED_NODES, algoOpts.getMaxVisitedNodes());
-//            return createCHPathCalculator(queryGraph, profile, opts);
-//        } else {
-//            return createFlexiblePathCalculator(queryGraph, profile, algoOpts, disableLM);
-//        }
-//    }
-//
-//    private PathCalculator createCHPathCalculator(QueryGraph queryGraph, Profile profile, PMap opts) {
-//        RoutingCHGraph chGraph = chGraphs.get(profile.getName());
-//        if (chGraph == null)
-//            throw new IllegalArgumentException("Cannot find CH preparation for the requested profile: '" + profile.getName() + "'" +
-//                    "\nYou can try disabling CH using " + Parameters.CH.DISABLE + "=true" +
-//                    "\navailable CH profiles: " + chGraphs.keySet());
-//        return new CHPathCalculator(new CHRoutingAlgorithmFactory(chGraph, queryGraph), opts);
-//    }
-//
-//    private FlexiblePathCalculator createFlexiblePathCalculator(QueryGraph queryGraph, Profile profile, AlgorithmOptions algoOpts, boolean disableLM) {
-//        RoutingAlgorithmFactory algorithmFactory;
-//        // for now do not allow mixing CH&LM #1082,#1889
-//        if (lmEnabled && !disableLM) {
-//            LandmarkStorage landmarkStorage = landmarks.get(profile.getName());
-//            if (landmarkStorage == null)
-//                throw new IllegalArgumentException("Cannot find LM preparation for the requested profile: '" + profile.getName() + "'" +
-//                        "\nYou can try disabling LM using " + Parameters.Landmark.DISABLE + "=true" +
-//                        "\navailable LM profiles: " + landmarks.keySet());
-//            algorithmFactory = new LMRoutingAlgorithmFactory(landmarkStorage).setDefaultActiveLandmarks(routerConfig.getActiveLandmarkCount());
-//        } else {
-//            algorithmFactory = new RoutingAlgorithmFactorySimple();
-//        }
-//        return new FlexiblePathCalculator(queryGraph, algorithmFactory, algoOpts);
-//    }
-//
-//=======
-//>>>>>>> tags/3.0
     private PathMerger createPathMerger(GHRequest request, Weighting weighting, Graph graph) {
         boolean enableInstructions = request.getHints().getBool(Parameters.Routing.INSTRUCTIONS, encodingManager.isEnableInstructions());
         boolean calcPoints = request.getHints().getBool(Parameters.Routing.CALC_POINTS, routerConfig.isCalcPoints());
