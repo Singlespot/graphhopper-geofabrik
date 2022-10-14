@@ -87,7 +87,7 @@ public class MapMatching {
     private Weighting weighting;
     private final BooleanEncodedValue inSubnetworkEnc;
     private QueryGraph queryGraph;
-    private int matchedUpTo = -1;
+    private int processedUpTo = 0;
 
     // number of points after removing duplicates and points from the input having a
     // distance shorter than the measurement accuracy
@@ -153,11 +153,11 @@ public class MapMatching {
     }
 
     public boolean matchingAttempted() {
-        return matchedUpTo >= 0;
+        return processedUpTo - 1 >= 0;
     }
 
-    public int getSucessfullyMatchedPoints() {
-        return matchedUpTo;
+    public int getProcessedPointsCount() {
+        return processedUpTo;
     }
 
     public int getPointCount() {
@@ -165,7 +165,7 @@ public class MapMatching {
     }
 
     public boolean hasPointsToBeMatched() {
-        return matchedUpTo < getPointCount();
+        return processedUpTo < getPointCount();
     }
 
     /**
@@ -409,7 +409,7 @@ public class MapMatching {
                     // Set matchedUpTo to current timeStepCounter because calling the map matching
                     // a second time should start with that step (and not run an unlimited number
                     // of unsuccessful attempts.
-                    matchedUpTo = timeStepCounter;
+                    processedUpTo = timeStepCounter;
                     return viterbi.computeMostLikelySequence();
                 }
             }
@@ -418,7 +418,7 @@ public class MapMatching {
             prevTimeStep = timeStep;
         }
 
-        matchedUpTo = timeStepCounter;
+        processedUpTo = timeStepCounter;
         return viterbi.computeMostLikelySequence();
     }
 
