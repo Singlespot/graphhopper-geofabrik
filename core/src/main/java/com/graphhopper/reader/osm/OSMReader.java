@@ -70,8 +70,6 @@ public class OSMReader {
     protected final OSMReaderConfig config;
     protected final GraphHopperStorage ghStorage;
     private final NodeAccess nodeAccess;
-    private List<OSMReaderHook> hooks;
-    private List<PostProcessingTask> postProcessingTasks;
     private final TurnCostStorage turnCostStorage;
     protected final EncodingManager encodingManager;
     private final DistanceCalc distCalc = DistanceCalcEarth.DIST_EARTH;
@@ -95,8 +93,6 @@ public class OSMReader {
         this.config = config;
         this.nodeAccess = ghStorage.getNodeAccess();
         this.encodingManager = ghStorage.getEncodingManager();
-        this.hooks = new LinkedList<OSMReaderHook>();
-        this.postProcessingTasks = new LinkedList<PostProcessingTask>();
 
         simplifyAlgo.setMaxDistance(config.getMaxWayPointDistance());
         simplifyAlgo.setElevationMaxDistance(config.getElevationMaxWayPointDistance());
@@ -137,14 +133,6 @@ public class OSMReader {
     public OSMReader setCountryRuleFactory(CountryRuleFactory countryRuleFactory) {
         this.countryRuleFactory = countryRuleFactory;
         return this;
-    }
-
-    public void register(OSMReaderHook hook) {
-        this.hooks.add(hook);
-    }
-
-    public void register(PostProcessingTask task) {
-        this.postProcessingTasks.add(task);
     }
 
     public void readGraph() throws IOException {
