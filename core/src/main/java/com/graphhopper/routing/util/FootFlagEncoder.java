@@ -49,26 +49,26 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
     final Set<String> allowedSacScale = new HashSet<>();
     protected HashSet<String> sidewalkValues = new HashSet<>(5);
     protected HashSet<String> sidewalksNoValues = new HashSet<>(5);
-    protected boolean speedTwoDirections;
-    private DecimalEncodedValue priorityWayEncoder;
-    private EnumEncodedValue<RouteNetwork> footRouteEnc;
-    Map<RouteNetwork, Integer> routeMap = new HashMap<>();
+    protected final boolean speedTwoDirections;
+    protected DecimalEncodedValue priorityWayEncoder;
+    protected EnumEncodedValue<RouteNetwork> footRouteEnc;
+    protected Map<RouteNetwork, Integer> routeMap = new HashMap<>();
 
     public FootFlagEncoder() {
-        this(4, 1);
+        this(4, 1, false);
     }
 
     public FootFlagEncoder(PMap properties) {
-        this(properties.getInt("speed_bits", 4), properties.getDouble("speed_factor", 1));
+        this(properties.getInt("speed_bits", 4), properties.getDouble("speed_factor", 1), properties.getBool("speed_two_directions", false));
 
         blockPrivate(properties.getBool("block_private", true));
         blockFords(properties.getBool("block_fords", false));
-        blockBarriersByDefault(properties.getBool("block_barriers", false));
-        speedTwoDirections = properties.getBool("speed_two_directions", false);
     }
 
-    protected FootFlagEncoder(int speedBits, double speedFactor) {
+    protected FootFlagEncoder(int speedBits, double speedFactor, boolean speedTwoDirections) {
         super(speedBits, speedFactor, 0);
+        this.speedTwoDirections = speedTwoDirections;
+        avgSpeedEnc = new DecimalEncodedValueImpl(getKey(getName(), "average_speed"), speedBits, speedFactor, speedTwoDirections);
 
         restrictedValues.add("no");
         restrictedValues.add("restricted");
@@ -91,11 +91,7 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
         sidewalkValues.add("left");
         sidewalkValues.add("right");
 
-        blockBarriersByDefault(false);
-        absoluteBarriers.add("fence");
-        potentialBarriers.add("gate");
-        potentialBarriers.add("cattle_grid");
-        potentialBarriers.add("chain");
+        barriers.add("fence");
 
         safeHighwayTags.add("footway");
         safeHighwayTags.add("path");
@@ -116,8 +112,6 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
         avoidHighwayTags.add("tertiary");
         avoidHighwayTags.add("tertiary_link");
 
-        // for now no explicit avoiding #257
-        //avoidHighwayTags.add("cycleway"); 
         allowedHighwayTags.addAll(safeHighwayTags);
         allowedHighwayTags.addAll(avoidHighwayTags);
         allowedHighwayTags.add("cycleway");
@@ -135,7 +129,7 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
         allowedSacScale.add("mountain_hiking");
         allowedSacScale.add("demanding_mountain_hiking");
 
-        maxPossibleSpeed = FERRY_SPEED;
+        maxPossibleSpeed = avgSpeedEnc.getNextStorableValue(FERRY_SPEED);
     }
 
     @Override
@@ -144,17 +138,13 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public int getVersion() {
-        return 5;
-    }
-
-    @Override
-    public void createEncodedValues(List<EncodedValue> registerNewEncodedValue, String prefix, int index) {
+    public void createEncodedValues(List<EncodedValue> registerNewEncodedValue) {
         // first two bits are reserved for route handling in superclass
-        super.createEncodedValues(registerNewEncodedValue, prefix, index);
+        super.createEncodedValues(registerNewEncodedValue);
         // larger value required - ferries are faster than pedestrians
-        registerNewEncodedValue.add(avgSpeedEnc = new UnsignedDecimalEncodedValue(getKey(prefix, "average_speed"), speedBits, speedFactor, speedTwoDirections));
-        registerNewEncodedValue.add(priorityWayEncoder = new UnsignedDecimalEncodedValue(getKey(prefix, "priority"), 3, PriorityCode.getFactor(1), speedTwoDirections));
+        String prefix = getName();
+        registerNewEncodedValue.add(avgSpeedEnc);
+        registerNewEncodedValue.add(priorityWayEncoder = new DecimalEncodedValueImpl(getKey(prefix, "priority"), 4, PriorityCode.getFactor(1), false));
 
         footRouteEnc = getEnumEncodedValue(RouteNetwork.key("foot"), RouteNetwork.class);
     }
@@ -222,7 +212,8 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way, EncodingManager.Access access) {
+    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way) {
+        EncodingManager.Access access = getAccess(way);
         if (access.canSkip())
             return edgeFlags;
 
@@ -237,12 +228,12 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
                 setSpeed(edgeFlags, true, true, way.hasTag("highway", "steps") ? MEAN_SPEED - 2 : MEAN_SPEED);
             }
         } else {
-            priorityFromRelation = PriorityCode.AVOID_IF_POSSIBLE.getValue();
+            priorityFromRelation = PriorityCode.SLIGHT_AVOID.getValue();
             double ferrySpeed = ferrySpeedCalc.getSpeed(way);
             setSpeed(edgeFlags, true, true, ferrySpeed);
         }
 
-        priorityWayEncoder.setDecimal(false, edgeFlags, PriorityCode.getFactor(handlePriority(way, priorityFromRelation)));
+        priorityWayEncoder.setDecimal(false, edgeFlags, PriorityCode.getValue(handlePriority(way, priorityFromRelation)));
         return edgeFlags;
     }
 
@@ -282,17 +273,17 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
             weightToPrioMap.put(40d, PREFER.getValue());
             if (way.hasTag("tunnel", intendedValues)) {
                 if (way.hasTag("sidewalk", sidewalksNoValues))
-                    weightToPrioMap.put(40d, AVOID_IF_POSSIBLE.getValue());
+                    weightToPrioMap.put(40d, SLIGHT_AVOID.getValue());
                 else
                     weightToPrioMap.put(40d, UNCHANGED.getValue());
             }
         } else if ((isValidSpeed(maxSpeed) && maxSpeed > 50) || avoidHighwayTags.contains(highway)) {
             if (!way.hasTag("sidewalk", sidewalkValues))
-                weightToPrioMap.put(45d, AVOID_IF_POSSIBLE.getValue());
+                weightToPrioMap.put(45d, AVOID.getValue());
         }
 
         if (way.hasTag("bicycle", "official") || way.hasTag("bicycle", "designated"))
-            weightToPrioMap.put(44d, AVOID_IF_POSSIBLE.getValue());
+            weightToPrioMap.put(44d, SLIGHT_AVOID.getValue());
     }
 
     @Override
@@ -304,7 +295,7 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return "foot";
     }
 }

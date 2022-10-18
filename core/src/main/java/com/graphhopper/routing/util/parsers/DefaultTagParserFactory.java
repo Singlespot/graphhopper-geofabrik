@@ -18,6 +18,7 @@
 package com.graphhopper.routing.util.parsers;
 
 import com.graphhopper.routing.ev.*;
+import com.graphhopper.routing.util.TransportationMode;
 import com.graphhopper.util.PMap;
 
 import static com.graphhopper.util.Helper.toLowerCase;
@@ -29,7 +30,6 @@ public class DefaultTagParserFactory implements TagParserFactory {
         if (!name.equals(toLowerCase(name)))
             throw new IllegalArgumentException("Use lower case for TagParsers: " + name);
 
-        // for Country (SpatialRuleParser) see SpatialRuleLookupHelper
         if (Roundabout.KEY.equals(name))
             return new OSMRoundaboutParser();
         else if (name.equals(RoadClass.KEY))
@@ -40,6 +40,10 @@ public class DefaultTagParserFactory implements TagParserFactory {
             return new OSMRoadEnvironmentParser();
         else if (name.equals(RoadAccess.KEY))
             return new OSMRoadAccessParser();
+        else if (name.equals("car_access"))
+            return new OSMAccessParser("car_access", OSMRoadAccessParser.toOSMRestrictions(TransportationMode.CAR), TransportationMode.CAR);
+        else if (name.equals("bike_access"))
+            return new OSMAccessParser("bike_access", OSMRoadAccessParser.toOSMRestrictions(TransportationMode.BIKE), TransportationMode.BIKE);
         else if (name.equals(MaxSpeed.KEY))
             return new OSMMaxSpeedParser();
         else if (name.equals(MaxWeight.KEY))
@@ -54,6 +58,8 @@ public class DefaultTagParserFactory implements TagParserFactory {
             return new OSMMaxLengthParser();
         else if (name.equals(Surface.KEY))
             return new OSMSurfaceParser();
+        else if (name.equals(Smoothness.KEY))
+            return new OSMSmoothnessParser();
         else if (name.equals(Toll.KEY))
             return new OSMTollParser();
         else if (name.equals(TrackType.KEY))
@@ -73,8 +79,7 @@ public class DefaultTagParserFactory implements TagParserFactory {
         else if (name.equals(HorseRating.KEY))
             return new OSMHorseRatingParser();
         else if (name.equals(Country.KEY))
-            throw new IllegalArgumentException("The property spatial_rules.borders_directory is required in the configuration " +
-                    "when using 'country' in encoded_values");
+            return new CountryParser();
 
         throw new IllegalArgumentException("DefaultTagParserFactory cannot find: " + name);
     }

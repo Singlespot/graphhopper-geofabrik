@@ -30,9 +30,12 @@ public class DefaultEncodedValueFactory implements EncodedValueFactory {
         if (name.isEmpty())
             throw new IllegalArgumentException("To load EncodedValue a name is required. " + string);
 
-        // creating the Country EV is done while SpatialRuleIndex is created and not here
         if (Roundabout.KEY.equals(name)) {
             enc = Roundabout.create();
+        } else if ("car_access".equals(name)) {
+            enc = new SimpleBooleanEncodedValue("car_access", true);
+        } else if ("bike_access".equals(name)) {
+            enc = new SimpleBooleanEncodedValue("bike_access", true);
         } else if (GetOffBike.KEY.equals(name)) {
             enc = GetOffBike.create();
         } else if (RoadClass.KEY.equals(name)) {
@@ -57,6 +60,8 @@ public class DefaultEncodedValueFactory implements EncodedValueFactory {
             enc = MaxLength.create();
         } else if (Surface.KEY.equals(name)) {
             enc = new EnumEncodedValue<>(Surface.KEY, Surface.class);
+        } else if (Smoothness.KEY.equals(name)) {
+            enc = new EnumEncodedValue<>(Smoothness.KEY, Smoothness.class);
         } else if (Toll.KEY.equals(name)) {
             enc = new EnumEncodedValue<>(Toll.KEY, Toll.class);
         } else if (TrackType.KEY.equals(name)) {

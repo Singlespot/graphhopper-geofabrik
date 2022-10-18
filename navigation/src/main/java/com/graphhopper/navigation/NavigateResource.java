@@ -19,7 +19,7 @@ package com.graphhopper.navigation;
 
 import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
-import com.graphhopper.GraphHopperAPI;
+import com.graphhopper.GraphHopper;
 import com.graphhopper.GraphHopperConfig;
 import com.graphhopper.util.Helper;
 import com.graphhopper.util.Parameters;
@@ -58,12 +58,12 @@ public class NavigateResource {
 
     private static final Logger logger = LoggerFactory.getLogger(NavigateResource.class);
 
-    private final GraphHopperAPI graphHopper;
+    private final GraphHopper graphHopper;
     private final TranslationMap translationMap;
     private final Map<String, String> resolverMap;
 
     @Inject
-    public NavigateResource(GraphHopperAPI graphHopper, TranslationMap translationMap, GraphHopperConfig config) {
+    public NavigateResource(GraphHopper graphHopper, TranslationMap translationMap, GraphHopperConfig config) {
         this.graphHopper = graphHopper;
         resolverMap = config.asPMap().getObject("profiles_mapbox", new HashMap<>());
         if (resolverMap.isEmpty()) {
@@ -161,14 +161,11 @@ public class NavigateResource {
         }
     }
 
-    private GHResponse calcRoute(List<Double> favoredHeadings, List<GHPoint> requestPoints, String profileStr,
+    private GHResponse calcRoute(List<Double> headings, List<GHPoint> requestPoints, String profileStr,
                                  String localeStr, boolean enableInstructions, double minPathPrecision) {
-        GHRequest request;
-        if (favoredHeadings.size() > 0) {
-            request = new GHRequest(requestPoints, favoredHeadings);
-        } else {
-            request = new GHRequest(requestPoints);
-        }
+        GHRequest request = new GHRequest(requestPoints);
+        if (headings.size() > 0)
+            request.setHeadings(headings);
 
         request.setProfile(profileStr).
                 setLocale(localeStr).

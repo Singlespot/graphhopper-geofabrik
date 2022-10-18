@@ -33,12 +33,7 @@ public class Car4WDFlagEncoder extends CarFlagEncoder {
     }
 
     @Override
-    public int getVersion() {
-        return 2;
-    }
-
-    @Override
-    public String toString() {
+    public String getName() {
         return "car4wd";
     }
 }

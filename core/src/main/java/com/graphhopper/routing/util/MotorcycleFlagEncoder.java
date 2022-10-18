@@ -19,15 +19,16 @@ package com.graphhopper.routing.util;
 
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.routing.ev.DecimalEncodedValue;
+import com.graphhopper.routing.ev.DecimalEncodedValueImpl;
 import com.graphhopper.routing.ev.EncodedValue;
-import com.graphhopper.routing.ev.MaxSpeed;
-import com.graphhopper.routing.ev.UnsignedDecimalEncodedValue;
 import com.graphhopper.routing.util.parsers.helpers.OSMValueExtractor;
 import com.graphhopper.routing.weighting.CurvatureWeighting;
 import com.graphhopper.routing.weighting.PriorityWeighting;
 import com.graphhopper.storage.IntsRef;
+import com.graphhopper.util.DistanceCalcEarth;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.PMap;
+import com.graphhopper.util.PointList;
 
 import java.util.HashSet;
 import java.util.List;
@@ -54,8 +55,8 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
     public MotorcycleFlagEncoder(PMap properties) {
         super(properties.putObject("speed_two_directions", true));
 
-        absoluteBarriers.remove("bus_trap");
-        absoluteBarriers.remove("sump_buster");
+        barriers.remove("bus_trap");
+        barriers.remove("sump_buster");
 
         trackTypeSpeedMap.clear();
         defaultSpeedMap.clear();
@@ -75,7 +76,7 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
         preferSet.add("secondary");
         preferSet.add("tertiary");
 
-        maxPossibleSpeed = 120;
+        maxPossibleSpeed = avgSpeedEnc.getNextStorableValue(properties.getDouble("max_speed", 120));
 
         // autobahn
         defaultSpeedMap.put("motorway", 100);
@@ -104,21 +105,17 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
         defaultSpeedMap.put("track", 15);
     }
 
-    @Override
-    public int getVersion() {
-        return 3;
-    }
-
     /**
      * Define the place of the speedBits in the edge flags for car.
      */
     @Override
-    public void createEncodedValues(List<EncodedValue> registerNewEncodedValue, String prefix, int index) {
+    public void createEncodedValues(List<EncodedValue> registerNewEncodedValue) {
         // first two bits are reserved for route handling in superclass
-        super.createEncodedValues(registerNewEncodedValue, prefix, index);
+        super.createEncodedValues(registerNewEncodedValue);
 
-        registerNewEncodedValue.add(priorityWayEncoder = new UnsignedDecimalEncodedValue(getKey(prefix, "priority"), 3, PriorityCode.getFactor(1), false));
-        registerNewEncodedValue.add(curvatureEncoder = new UnsignedDecimalEncodedValue(getKey(prefix, "curvature"), 4, 0.1, false));
+        String prefix = getName();
+        registerNewEncodedValue.add(priorityWayEncoder = new DecimalEncodedValueImpl(getKey(prefix, "priority"), 4, PriorityCode.getFactor(1), false));
+        registerNewEncodedValue.add(curvatureEncoder = new DecimalEncodedValueImpl(getKey(prefix, "curvature"), 4, 0.1, false));
     }
 
     @Override
@@ -167,11 +164,12 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
     }
 
     @Override
-    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way, EncodingManager.Access accept) {
-        if (accept.canSkip())
+    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way) {
+        EncodingManager.Access access = getAccess(way);
+        if (access.canSkip())
             return edgeFlags;
 
-        if (!accept.isFerry()) {
+        if (!access.isFerry()) {
             // get assumed speed from highway type
             double speed = getSpeed(way);
             speed = applyMaxSpeed(way, speed);
@@ -208,17 +206,15 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
             setSpeed(true, edgeFlags, ferrySpeed);
         }
 
-        priorityWayEncoder.setDecimal(false, edgeFlags, PriorityCode.getFactor(handlePriority(way)));
-
-        // Set the curvature to the Maximum
-        curvatureEncoder.setDecimal(false, edgeFlags, PriorityCode.getFactor(10));
+        priorityWayEncoder.setDecimal(false, edgeFlags, PriorityCode.getValue(handlePriority(way)));
+        curvatureEncoder.setDecimal(false, edgeFlags, 10.0 / 7.0);
         return edgeFlags;
     }
 
     private int handlePriority(ReaderWay way) {
         String highway = way.getTag("highway", "");
         if (avoidSet.contains(highway)) {
-            return PriorityCode.WORST.getValue();
+            return PriorityCode.BAD.getValue();
         } else if (preferSet.contains(highway)) {
             return PriorityCode.BEST.getValue();
         }
@@ -241,7 +237,12 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
     }
 
     private double getBeelineDistance(ReaderWay way) {
-        return way.getTag("estimated_distance", Double.POSITIVE_INFINITY);
+        PointList pointList = way.getTag("point_list", null);
+        if (pointList == null)
+            throw new IllegalStateException("The artificial 'point_list' tag is missing for way: " + way.getId());
+        if (pointList.size() < 2)
+            throw new IllegalStateException("The artificial 'point_list' tag contained less than two points for way: " + way.getId());
+        return DistanceCalcEarth.DIST_EARTH.calcDist(pointList.getLat(0), pointList.getLon(0), pointList.getLat(pointList.size() - 1), pointList.getLon(pointList.size() - 1));
     }
 
     /**
@@ -293,7 +294,7 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return "motorcycle";
     }
 }

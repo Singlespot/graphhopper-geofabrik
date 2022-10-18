@@ -21,16 +21,11 @@ import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphHopperStorage;
 import com.graphhopper.storage.NodeAccess;
-import com.graphhopper.util.EdgeIteratorState;
-import com.graphhopper.util.FetchMode;
-import com.graphhopper.util.GHUtility;
-import com.graphhopper.util.PointList;
+import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.GHPoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Robin Boldt
@@ -279,7 +274,7 @@ public class NameSimilarityEdgeFilterTest {
         // -----
         //
         //    2 -- 3
-        CarFlagEncoder encoder = new CarFlagEncoder().setSpeedTwoDirections(true);
+        CarFlagEncoder encoder = new CarFlagEncoder(new PMap().putObject("speed_two_directions", true));
         EncodingManager em = EncodingManager.create(encoder);
         GraphHopperStorage graph = new GraphBuilder(em).create();
         PointList pointList = new PointList(20, false);

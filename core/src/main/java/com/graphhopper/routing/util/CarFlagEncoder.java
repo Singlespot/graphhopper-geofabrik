@@ -18,8 +18,8 @@
 package com.graphhopper.routing.util;
 
 import com.graphhopper.reader.ReaderWay;
+import com.graphhopper.routing.ev.DecimalEncodedValueImpl;
 import com.graphhopper.routing.ev.EncodedValue;
-import com.graphhopper.routing.ev.UnsignedDecimalEncodedValue;
 import com.graphhopper.storage.IntsRef;
 import com.graphhopper.util.Helper;
 import com.graphhopper.util.PMap;
@@ -35,7 +35,7 @@ import java.util.*;
 public class CarFlagEncoder extends AbstractFlagEncoder {
     protected final Map<String, Integer> trackTypeSpeedMap = new HashMap<>();
     protected final Set<String> badSurfaceSpeedMap = new HashSet<>();
-    private boolean speedTwoDirections;
+    private final boolean speedTwoDirections;
     // This value determines the maximal possible on roads with bad surfaces
     protected int badSurfaceSpeed;
 
@@ -51,14 +51,22 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
     }
 
     public CarFlagEncoder(int speedBits, double speedFactor, int maxTurnCosts) {
+        this(speedBits, speedFactor, maxTurnCosts, false);
+    }
+
+    public CarFlagEncoder(int speedBits, double speedFactor, int maxTurnCosts, boolean speedTwoDirections) {
         this(new PMap().putObject("speed_bits", speedBits).putObject("speed_factor", speedFactor).
-                putObject("max_turn_costs", maxTurnCosts));
+                putObject("max_turn_costs", maxTurnCosts).putObject("speed_two_directions", speedTwoDirections));
     }
 
     public CarFlagEncoder(PMap properties) {
         super(properties.getInt("speed_bits", 5),
                 properties.getDouble("speed_factor", 5),
                 properties.getInt("max_turn_costs", properties.getBool("turn_costs", false) ? 1 : 0));
+
+        speedTwoDirections = properties.getBool("speed_two_directions", false);
+        String prefix = getName();
+        avgSpeedEnc = new DecimalEncodedValueImpl(EncodingManager.getKey(prefix, "average_speed"), speedBits, speedFactor, speedTwoDirections);
 
         restrictedValues.add("agricultural");
         restrictedValues.add("forestry");
@@ -71,29 +79,21 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
 
         blockPrivate(properties.getBool("block_private", true));
         blockFords(properties.getBool("block_fords", false));
-        blockBarriersByDefault(properties.getBool("block_barriers", true));
-        setSpeedTwoDirections(properties.getBool("speed_two_directions", false));
 
         intendedValues.add("yes");
         intendedValues.add("designated");
         intendedValues.add("permissive");
 
-        potentialBarriers.add("gate");
-        potentialBarriers.add("lift_gate");
-        potentialBarriers.add("kissing_gate");
-        potentialBarriers.add("swing_gate");
-        potentialBarriers.add("cattle_grid");
-        potentialBarriers.add("chain");
-
-        absoluteBarriers.add("fence");
-        absoluteBarriers.add("bollard");
-        absoluteBarriers.add("stile");
-        absoluteBarriers.add("turnstile");
-        absoluteBarriers.add("cycle_barrier");
-        absoluteBarriers.add("motorcycle_barrier");
-        absoluteBarriers.add("block");
-        absoluteBarriers.add("bus_trap");
-        absoluteBarriers.add("sump_buster");
+        barriers.add("kissing_gate");
+        barriers.add("fence");
+        barriers.add("bollard");
+        barriers.add("stile");
+        barriers.add("turnstile");
+        barriers.add("cycle_barrier");
+        barriers.add("motorcycle_barrier");
+        barriers.add("block");
+        barriers.add("bus_trap");
+        barriers.add("sump_buster");
 
         badSurfaceSpeedMap.add("cobblestone");
         badSurfaceSpeedMap.add("grass_paver");
@@ -139,12 +139,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
 
         // limit speed on bad surfaces to 30 km/h
         badSurfaceSpeed = 30;
-        maxPossibleSpeed = 140;
-    }
-
-    public CarFlagEncoder setSpeedTwoDirections(boolean value) {
-        speedTwoDirections = value;
-        return this;
+        maxPossibleSpeed = avgSpeedEnc.getNextStorableValue(properties.getDouble("max_speed", 140));
     }
 
     @Override
@@ -152,19 +147,14 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
         return TransportationMode.CAR;
     }
 
-    @Override
-    public int getVersion() {
-        return 2;
-    }
-
     /**
      * Define the place of the speedBits in the edge flags for car.
      */
     @Override
-    public void createEncodedValues(List<EncodedValue> registerNewEncodedValue, String prefix, int index) {
+    public void createEncodedValues(List<EncodedValue> registerNewEncodedValue) {
         // first two bits are reserved for route handling in superclass
-        super.createEncodedValues(registerNewEncodedValue, prefix, index);
-        registerNewEncodedValue.add(avgSpeedEnc = new UnsignedDecimalEncodedValue(EncodingManager.getKey(prefix, "average_speed"), speedBits, speedFactor, speedTwoDirections));
+        super.createEncodedValues(registerNewEncodedValue);
+        registerNewEncodedValue.add(avgSpeedEnc);
     }
 
     protected double getSpeed(ReaderWay way) {
@@ -175,7 +165,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
         }
         Integer speed = defaultSpeedMap.get(highwayValue);
         if (speed == null)
-            throw new IllegalStateException(toString() + ", no speed found for: " + highwayValue + ", tags: " + way);
+            throw new IllegalStateException(getName() + ", no speed found for: " + highwayValue + ", tags: " + way);
 
         if (highwayValue.equals("track")) {
             String tt = way.getTag("tracktype");
@@ -234,11 +224,12 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way, EncodingManager.Access accept) {
-        if (accept.canSkip())
+    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way) {
+        EncodingManager.Access access = getAccess(way);
+        if (access.canSkip())
             return edgeFlags;
 
-        if (!accept.isFerry()) {
+        if (!access.isFerry()) {
             // get assumed speed from highway type
             double speed = getSpeed(way);
             speed = applyMaxSpeed(way, speed);
@@ -270,6 +261,21 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
         }
 
         return edgeFlags;
+    }
+
+    /**
+     * @param way   needed to retrieve tags
+     * @param speed speed guessed e.g. from the road type or other tags
+     * @return The assumed speed.
+     */
+    protected double applyMaxSpeed(ReaderWay way, double speed) {
+        double maxSpeed = getMaxSpeed(way);
+        // We obey speed limits
+        if (isValidSpeed(maxSpeed)) {
+            // We assume that the average speed is 90% of the allowed maximum
+            return maxSpeed * 0.9;
+        }
+        return speed;
     }
 
     /**
@@ -311,7 +317,7 @@ public class CarFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return "car";
     }
 }
