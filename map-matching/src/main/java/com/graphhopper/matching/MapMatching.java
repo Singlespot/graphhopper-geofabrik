@@ -165,12 +165,8 @@ public class MapMatching {
         return processedUpTo + 1;
     }
 
-    public int getPointCount() {
-        return pointCount;
-    }
-
     public boolean hasPointsToBeMatched() {
-        return processedUpTo < getPointCount();
+        return processedUpTo < pointCount - 1;
     }
 
     /**
