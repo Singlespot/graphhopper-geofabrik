@@ -37,8 +37,6 @@ public interface TurnCostParser {
      */
     public DecimalEncodedValue getTurnCostEnc();
 
-    void createTurnCostEncodedValues(EncodedValueLookup lookup, List<EncodedValue> registerNewEncodedValue);
-
     void handleTurnRelationTags(OSMTurnRelation turnRelation, ExternalInternalMap map, Graph graph);
 
     /**

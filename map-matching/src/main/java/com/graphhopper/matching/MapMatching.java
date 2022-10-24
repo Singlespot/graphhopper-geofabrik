@@ -17,9 +17,6 @@
  */
 package com.graphhopper.matching;
 
-import com.bmw.hmm.SequenceState;
-import com.bmw.hmm.Transition;
-import com.bmw.hmm.ViterbiAlgorithm;
 import com.carrotsearch.hppc.IntHashSet;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.config.Profile;
@@ -37,14 +34,13 @@ import com.graphhopper.routing.util.DefaultSnapFilter;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.routing.util.TraversalMode;
 import com.graphhopper.routing.weighting.Weighting;
+import com.graphhopper.storage.BaseGraph;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.index.LocationIndexTree;
 import com.graphhopper.storage.index.Snap;
 import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.BBox;
 import org.locationtech.jts.geom.Envelope;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,29 +66,25 @@ import static com.graphhopper.util.DistancePlaneProjection.DIST_PLANE;
  * @author kodonnell
  */
 public class MapMatching {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final Graph graph;
-    private final LandmarkStorage landmarks;
+    private final BaseGraph graph;
+    private final Router router;
     private final LocationIndexTree locationIndex;
     private double measurementErrorSigma = 50.0;
     private double transitionProbabilityBeta = 2.0;
-    private final int maxVisitedNodes;
     private final DistanceCalc distanceCalc = new DistancePlaneProjection();
-    private final Weighting unwrappedWeighting;
-    private Weighting weighting;
-    private final BooleanEncodedValue inSubnetworkEnc;
     private QueryGraph queryGraph;
+    /// index of the input observations up to which processing was successful
     private int processedUpTo = 0;
+    /// processing offset at start
+    private int offset = 0;
+    /// indexes of observations after filtering
+    private List<Integer> filteredIndexMapping = new ArrayList<Integer>();
 
     // number of points after removing duplicates and points from the input having a
     // distance shorter than the measurement accuracy
     private int pointCount = -1;
 
-    public MapMatching(GraphHopper graphHopper, PMap hints) {
-        this.locationIndex = (LocationIndexTree) graphHopper.getLocationIndex();
-
+    public static MapMatching fromGraphHopper(GraphHopper graphHopper, PMap hints) {
         if (hints.has("vehicle"))
             throw new IllegalArgumentException("MapMatching hints may no longer contain a vehicle, use the profile parameter instead, see core/#1958");
         if (hints.has("weighting"))
@@ -122,6 +114,7 @@ public class MapMatching {
         // (=faster) choice when the observations are close to each other
         boolean useDijkstra = disableLM || disableCH;
 
+        LandmarkStorage landmarks;
         if (graphHopper.getLMPreparationHandler().isEnabled() && !useDijkstra) {
             // using LM because u-turn prevention does not work properly with (node-based) CH
             landmarks = graphHopper.getLandmarks().get(profile.getName());
@@ -133,18 +126,43 @@ public class MapMatching {
         } else {
             landmarks = null;
         }
-        graph = graphHopper.getGraphHopperStorage();
-        unwrappedWeighting = graphHopper.createWeighting(profile, hints);
-        inSubnetworkEnc = graphHopper.getEncodingManager().getBooleanEncodedValue(Subnetwork.key(profileStr));
-        this.maxVisitedNodes = hints.getInt(Parameters.Routing.MAX_VISITED_NODES, Integer.MAX_VALUE);
+        Weighting weighting = graphHopper.createWeighting(profile, hints);
+        BooleanEncodedValue inSubnetworkEnc = graphHopper.getEncodingManager().getBooleanEncodedValue(Subnetwork.key(profileStr));
+        DefaultSnapFilter snapFilter = new DefaultSnapFilter(weighting, inSubnetworkEnc);
+        int maxVisitedNodes = hints.getInt(Parameters.Routing.MAX_VISITED_NODES, Integer.MAX_VALUE);
+
+        Router router = new Router() {
+            @Override
+            public EdgeFilter getSnapFilter() {
+                return snapFilter;
+            }
+
+            @Override
+            public BidirRoutingAlgorithm createAlgo(QueryGraph queryGraph) {
+                return createRouter(queryGraph, queryGraph.wrapWeighting(weighting), landmarks, maxVisitedNodes);
+            }
+
+            @Override
+            public Weighting getWeighting() {
+                return weighting;
+            }
+        };
+
+        return new MapMatching(graphHopper.getBaseGraph(), (LocationIndexTree) graphHopper.getLocationIndex(), router);
+    }
+
+    public MapMatching(BaseGraph graph, LocationIndexTree locationIndex, Router router) {
+        this.graph = graph;
+        this.locationIndex = locationIndex;
+        this.router = router;
     }
 
     public boolean matchingAttempted() {
-        return processedUpTo - 1 >= 0;
+        return processedUpTo > 0;
     }
 
     public int getProcessedPointsCount() {
-        return processedUpTo;
+        return processedUpTo + 1;
     }
 
     public int getPointCount() {
@@ -171,6 +189,13 @@ public class MapMatching {
         this.measurementErrorSigma = measurementErrorSigma;
     }
 
+    private void resetCounters(int observationCount, int offset) {
+        this.offset = offset;
+        this.pointCount = observationCount;
+        this.processedUpTo = offset;
+        this.filteredIndexMapping.clear();
+    }
+
     /**
      * This method does the actual map matching.
      * <p>
@@ -190,11 +215,13 @@ public class MapMatching {
      *
      * @param gpxList The input list with GPX points which should match to edges
      *                of the graph specified in the constructor
-     * @param throwGapException Whether to throw an exception if a segment cannot be matched
+     * @param ignoreErrors Whether to return ignore unmatchable segments.
      * @param offset Offset to start matching at. This value will be stored and available
      *               using getSuccessfullyMatchedPoints().
      */
-    public MatchResult match(List<Observation> observations, boolean throwGapException, int offset) {
+    public MatchResult match(List<Observation> observations, boolean ignoreErrors, int offset) {
+        this.offset = offset;
+        resetCounters(observations.size(), offset);
         List<Observation> observationSubList = observations.subList(offset, observations.size());
         List<Observation> filteredObservations = filterObservations(observationSubList);
 
@@ -206,25 +233,24 @@ public class MapMatching {
         // Create the query graph, containing split edges so that all the places where an observation might have happened
         // are a node. This modifies the Snap objects and puts the new node numbers into them.
         queryGraph = QueryGraph.create(graph, snapsPerObservation.stream().flatMap(Collection::stream).collect(Collectors.toList()));
-        weighting = queryGraph.wrapWeighting(unwrappedWeighting);
 
         // Creates candidates from the Snaps of all observations (a candidate is basically a
         // Snap + direction).
         List<ObservationWithCandidateStates> timeSteps = createTimeSteps(filteredObservations, snapsPerObservation);
 
-        pointCount = timeSteps.size();
         // Compute the most likely sequence of map matching candidates:
-        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps, throwGapException);
+        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps, ignoreErrors);
 
         List<EdgeIteratorState> path = seq.stream().filter(s1 -> s1.transitionDescriptor != null).flatMap(s1 -> s1.transitionDescriptor.calcEdges().stream()).collect(Collectors.toList());
 
         MatchResult result = new MatchResult(prepareEdgeMatches(seq));
-        result.setMergedPath(new MapMatchedPath(queryGraph, weighting, path));
+        Weighting queryGraphWeighting = queryGraph.wrapWeighting(router.getWeighting());
+        result.setMergedPath(new MapMatchedPath(queryGraph, queryGraphWeighting, path));
         result.setMatchMillis(seq.stream().filter(s -> s.transitionDescriptor != null).mapToLong(s -> s.transitionDescriptor.getTime()).sum());
         result.setMatchLength(seq.stream().filter(s -> s.transitionDescriptor != null).mapToDouble(s -> s.transitionDescriptor.getDistance()).sum());
         result.setGPXEntriesLength(gpxLength(observations));
         result.setGraph(queryGraph);
-        result.setWeighting(weighting);
+        result.setWeighting(queryGraphWeighting);
         return result;
     }
 
@@ -232,19 +258,39 @@ public class MapMatching {
      * Filters observations to only those which will be used for map matching (i.e. those which
      * are separated by at least 2 * measurementErrorSigman
      */
-    private List<Observation> filterObservations(List<Observation> observations) {
+    public List<Observation> filterObservations(List<Observation> observations) {
         List<Observation> filtered = new ArrayList<>();
         Observation prevEntry = null;
+        double acc = 0.0;
         int last = observations.size() - 1;
         for (int i = 0; i <= last; i++) {
             Observation observation = observations.get(i);
             if (i == 0 || i == last || distanceCalc.calcDist(
                     prevEntry.getPoint().getLat(), prevEntry.getPoint().getLon(),
                     observation.getPoint().getLat(), observation.getPoint().getLon()) > 2 * measurementErrorSigma) {
+                if (i > 0) {
+                    Observation prevObservation = observations.get(i - 1);
+                    acc += distanceCalc.calcDist(
+                            prevObservation.getPoint().getLat(), prevObservation.getPoint().getLon(),
+                            observation.getPoint().getLat(), observation.getPoint().getLon());
+                    acc -= distanceCalc.calcDist(
+                            prevEntry.getPoint().getLat(), prevEntry.getPoint().getLon(),
+                            observation.getPoint().getLat(), observation.getPoint().getLon());
+                }
+                // Here we store the meters of distance that we are missing because of the filtering,
+                // so that when we add these terms to the distances between the filtered points,
+                // the original total distance between the unfiltered points is conserved.
+                // (See test for kind of a specification.)
+                observation.setAccumulatedLinearDistanceToPrevious(acc);
                 filtered.add(observation);
                 prevEntry = observation;
+                acc = 0.0;
+                filteredIndexMapping.add(i);
             } else {
-                logger.debug("Filter out observation: {}", i + 1);
+                Observation prevObservation = observations.get(i - 1);
+                acc += distanceCalc.calcDist(
+                        prevObservation.getPoint().getLat(), prevObservation.getPoint().getLon(),
+                        observation.getPoint().getLat(), observation.getPoint().getLon());
             }
         }
         return filtered;
@@ -265,7 +311,7 @@ public class MapMatching {
     }
 
     private List<Snap> findCandidateSnapsInBBox(double queryLat, double queryLon, BBox queryShape) {
-        EdgeFilter edgeFilter = new DefaultSnapFilter(unwrappedWeighting, inSubnetworkEnc);
+        EdgeFilter edgeFilter = router.getSnapFilter();
         List<Snap> snaps = new ArrayList<>();
         IntHashSet seenEdges = new IntHashSet();
         IntHashSet seenNodes = new IntHashSet();
@@ -345,89 +391,87 @@ public class MapMatching {
         return timeSteps;
     }
 
-    /**
-     * Computes the most likely state sequence for the observations.
-     */
-    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps) {
-        return computeViterbiSequence(timeSteps, true);
+    static class Label {
+        int timeStep;
+        State state;
+        Label back;
+        boolean isDeleted;
+        double minusLogProbability;
     }
 
-    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean throwException) {
+    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean ignoreErrors) {
         final HmmProbabilities probabilities = new HmmProbabilities(measurementErrorSigma, transitionProbabilityBeta);
-        final ViterbiAlgorithm<State, Observation, Path> viterbi = new ViterbiAlgorithm<>();
+        final Map<State, Label> labels = new HashMap<>();
+        Map<Transition<State>, Path> roadPaths = new HashMap<>();
 
-        int timeStepCounter = 0;
-        ObservationWithCandidateStates prevTimeStep = null;
-        for (ObservationWithCandidateStates timeStep : timeSteps) {
-            final Map<State, Double> emissionLogProbabilities = new HashMap<>();
-            Map<Transition<State>, Double> transitionLogProbabilities = new HashMap<>();
-            Map<Transition<State>, Path> roadPaths = new HashMap<>();
-            for (State candidate : timeStep.candidates) {
-                // distance from observation to road in meters
-                final double distance = candidate.getSnap().getQueryDistance();
-                emissionLogProbabilities.put(candidate, probabilities.emissionLogProbability(distance));
+        PriorityQueue<Label> q = new PriorityQueue<>(Comparator.comparing(qe -> qe.minusLogProbability));
+        for (State candidate : timeSteps.get(0).candidates) {
+            // distance from observation to road in meters
+            final double distance = candidate.getSnap().getQueryDistance();
+            Label label = new Label();
+            label.state = candidate;
+            label.minusLogProbability = probabilities.emissionLogProbability(distance) * -1.0;
+            q.add(label);
+            labels.put(candidate, label);
+        }
+        Label qe = null;
+        int lastTimeStepCount = 0;
+        boolean pathFound = false;
+        while (!q.isEmpty()) {
+            qe = q.poll();
+            if (qe.isDeleted) {
+                continue;
             }
-
-            if (prevTimeStep == null) {
-                viterbi.startWithInitialObservation(timeStep.observation, timeStep.candidates, emissionLogProbabilities);
-            } else {
-                final double linearDistance = distanceCalc.calcDist(prevTimeStep.observation.getPoint().lat,
-                        prevTimeStep.observation.getPoint().lon, timeStep.observation.getPoint().lat, timeStep.observation.getPoint().lon);
-
-                for (State from : prevTimeStep.candidates) {
-                    for (State to : timeStep.candidates) {
-                        final Path path = createRouter().calcPath(from.getSnap().getClosestNode(), to.getSnap().getClosestNode(), from.isOnDirectedEdge() ? from.getOutgoingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE, to.isOnDirectedEdge() ? to.getIncomingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE);
-                        if (path.isFound()) {
-                            double transitionLogProbability = probabilities.transitionLogProbability(path.getDistance(), linearDistance);
-                            Transition<State> transition = new Transition<>(from, to);
-                            roadPaths.put(transition, path);
-                            transitionLogProbabilities.put(transition, transitionLogProbability);
-                        }
+            if (qe.timeStep > lastTimeStepCount) {
+                processedUpTo = offset + filteredIndexMapping.get(qe.timeStep);
+                if (!pathFound && !ignoreErrors) {
+                    break;
+                }                
+                lastTimeStepCount = qe.timeStep;
+                pathFound = false;
+            }
+            if (qe.timeStep == timeSteps.size() - 1) {
+                break;
+            }
+            State from = qe.state;
+            ObservationWithCandidateStates timeStep = timeSteps.get(qe.timeStep);
+            ObservationWithCandidateStates nextTimeStep = timeSteps.get(qe.timeStep + 1);
+            final double linearDistance = distanceCalc.calcDist(timeStep.observation.getPoint().lat, timeStep.observation.getPoint().lon,
+                    nextTimeStep.observation.getPoint().lat, nextTimeStep.observation.getPoint().lon)
+                    + nextTimeStep.observation.getAccumulatedLinearDistanceToPrevious();
+            for (State to : nextTimeStep.candidates) {
+                final Path path = router.createAlgo(queryGraph).calcPath(from.getSnap().getClosestNode(), to.getSnap().getClosestNode(), from.isOnDirectedEdge() ? from.getOutgoingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE, to.isOnDirectedEdge() ? to.getIncomingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE);
+                if (path.isFound()) {
+                    double transitionLogProbability = probabilities.transitionLogProbability(path.getDistance(), linearDistance);
+                    Transition<State> transition = new Transition<>(from, to);
+                    roadPaths.put(transition, path);
+                    double minusLogProbability = qe.minusLogProbability - probabilities.emissionLogProbability(to.getSnap().getQueryDistance()) - transitionLogProbability;
+                    Label label1 = labels.get(to);
+                    if (label1 == null || minusLogProbability < label1.minusLogProbability) {
+                        q.stream().filter(oldQe -> !oldQe.isDeleted && oldQe.state == to).findFirst().ifPresent(oldQe -> oldQe.isDeleted = true);
+                        Label label = new Label();
+                        label.state = to;
+                        label.timeStep = qe.timeStep + 1;
+                        label.back = qe;
+                        label.minusLogProbability = minusLogProbability;
+                        q.add(label);
+                        labels.put(to, label);
                     }
-                }
-                viterbi.nextStep(timeStep.observation, timeStep.candidates,
-                        emissionLogProbabilities, transitionLogProbabilities,
-                        roadPaths);
-            }
-            if (viterbi.isBroken()) {
-                if (throwException) {
-                    fail(timeStepCounter, prevTimeStep, timeStep);
-                } else {
-                    // Set matchedUpTo to current timeStepCounter because calling the map matching
-                    // a second time should start with that step (and not run an unlimited number
-                    // of unsuccessful attempts.
-                    processedUpTo = timeStepCounter;
-                    return viterbi.computeMostLikelySequence();
+                    pathFound = true;
                 }
             }
-
-            timeStepCounter++;
-            prevTimeStep = timeStep;
         }
-
-        processedUpTo = timeStepCounter;
-        return viterbi.computeMostLikelySequence();
+        ArrayList<SequenceState<State, Observation, Path>> result = new ArrayList<>();
+        while (qe != null) {
+            final SequenceState<State, Observation, Path> ss = new SequenceState<>(qe.state, qe.state.getEntry(), qe.back == null ? null : roadPaths.get(new Transition<>(qe.back.state, qe.state)));
+            result.add(ss);
+            qe = qe.back;
+        }
+        Collections.reverse(result);
+        return result;
     }
 
-    private void fail(int timeStepCounter, ObservationWithCandidateStates prevTimeStep, ObservationWithCandidateStates timeStep) {
-        String likelyReasonStr = "";
-        if (prevTimeStep != null) {
-            double dist = distanceCalc.calcDist(prevTimeStep.observation.getPoint().lat, prevTimeStep.observation.getPoint().lon, timeStep.observation.getPoint().lat, timeStep.observation.getPoint().lon);
-            if (dist > 2000) {
-                likelyReasonStr = "Too long distance to previous measurement? "
-                        + Math.round(dist) + "m, ";
-            }
-        }
-
-        throw new IllegalArgumentException("Sequence is broken for submitted track at time step "
-                + timeStepCounter + ". "
-                + likelyReasonStr + "observation:" + timeStep.observation + ", "
-                + timeStep.candidates.size() + " candidates: "
-                + getSnappedCandidates(timeStep.candidates)
-                + ". If a match is expected consider increasing max_visited_nodes.");
-    }
-
-    private BidirRoutingAlgorithm createRouter() {
+    private static BidirRoutingAlgorithm createRouter(QueryGraph queryGraph, Weighting weighting, LandmarkStorage landmarks, int maxVisitedNodes) {
         BidirRoutingAlgorithm router;
         if (landmarks != null) {
             AStarBidirection algo = new AStarBidirection(queryGraph, weighting, TraversalMode.EDGE_BASED) {
@@ -437,7 +481,8 @@ public class MapMatching {
                 }
             };
             int activeLM = Math.min(8, landmarks.getLandmarkCount());
-            algo.setApproximation(LMApproximator.forLandmarks(queryGraph, landmarks, activeLM));
+            LMApproximator lmApproximator = LMApproximator.forLandmarks(queryGraph, landmarks, activeLM);
+            algo.setApproximation(lmApproximator);
             algo.setMaxVisitedNodes(maxVisitedNodes);
             router = algo;
         } else {
@@ -538,18 +583,6 @@ public class MapMatching {
         }
     }
 
-    private String getSnappedCandidates(Collection<State> candidates) {
-        String str = "";
-        for (State gpxe : candidates) {
-            if (!str.isEmpty()) {
-                str += ", ";
-            }
-            str += "distance: " + gpxe.getSnap().getQueryDistance() + " to "
-                    + gpxe.getSnap().getSnappedPoint();
-        }
-        return "[" + str + "]";
-    }
-
     private static class MapMatchedPath extends Path {
         MapMatchedPath(Graph graph, Weighting weighting, List<EdgeIteratorState> edges) {
             super(graph);
@@ -567,6 +600,14 @@ public class MapMatching {
                 setFound(true);
             }
         }
+    }
+
+    public interface Router {
+        EdgeFilter getSnapFilter();
+
+        BidirRoutingAlgorithm createAlgo(QueryGraph graph);
+
+        Weighting getWeighting();
     }
 
 }

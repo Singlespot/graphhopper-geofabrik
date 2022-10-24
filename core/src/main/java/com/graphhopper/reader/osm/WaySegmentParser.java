@@ -218,7 +218,7 @@ public class WaySegmentParser {
                 LOGGER.info("pass2 - processed nodes: " + nf(nodeCounter) + ", accepted nodes: " + nf(acceptedNodes) +
                         ", " + Helper.getMemInfo());
 
-            int nodeType = nodeData.addCoordinatesIfMapped(node.getId(), node.getLat(), node.getLon(), eleProvider.getEle(node));
+            int nodeType = nodeData.addCoordinatesIfMapped(node.getId(), node.getLat(), node.getLon(), () -> eleProvider.getEle(node));
             if (nodeType == EMPTY_NODE)
                 return;
 
@@ -518,16 +518,16 @@ public class WaySegmentParser {
     public interface ReaderElementHandler {
         default void handleElement(ReaderElement elem) throws ParseException {
             switch (elem.getType()) {
-                case ReaderElement.NODE:
+                case NODE:
                     handleNode((ReaderNode) elem);
                     break;
-                case ReaderElement.WAY:
+                case WAY:
                     handleWay((ReaderWay) elem);
                     break;
-                case ReaderElement.RELATION:
+                case RELATION:
                     handleRelation((ReaderRelation) elem);
                     break;
-                case ReaderElement.FILEHEADER:
+                case FILEHEADER:
                     handleFileHeader((OSMFileHeader) elem);
                     break;
                 default:

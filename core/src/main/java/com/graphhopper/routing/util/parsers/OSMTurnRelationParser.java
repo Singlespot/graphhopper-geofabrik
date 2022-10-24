@@ -18,7 +18,8 @@
 package com.graphhopper.routing.util.parsers;
 
 import com.graphhopper.reader.OSMTurnRelation;
-import com.graphhopper.routing.ev.*;
+import com.graphhopper.routing.ev.BooleanEncodedValue;
+import com.graphhopper.routing.ev.DecimalEncodedValue;
 import com.graphhopper.routing.util.AccessFilter;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.TurnCostStorage;
@@ -27,42 +28,26 @@ import com.graphhopper.util.EdgeIterator;
 
 import java.util.List;
 
-import static com.graphhopper.routing.util.EncodingManager.getKey;
-
 /**
  * This parser takes the turn restrictions from OSM (OSM does not provide turn costs, but only restrictions) and creates the appropriate turn costs (with value infinity)
  */
 public class OSMTurnRelationParser implements TurnCostParser {
-    private String name;
-    private DecimalEncodedValue turnCostEnc;
+    private final BooleanEncodedValue accessEnc;
+    private final DecimalEncodedValue turnCostEnc;
     private final List<String> restrictions;
-    private BooleanEncodedValue accessEnc;
     private EdgeExplorer cachedOutExplorer, cachedInExplorer;
 
-    /**
-     * @param maxTurnCosts specify the maximum value used for turn costs, if this value is reached a
-     *                     turn is forbidden and results in costs of positive infinity.
-     */
-    public OSMTurnRelationParser(String name, int maxTurnCosts, List<String> restrictions) {
-        this.name = name;
-        this.turnCostEnc = TurnCost.create(name, maxTurnCosts);
-
+    public OSMTurnRelationParser(BooleanEncodedValue accessEnc, DecimalEncodedValue turnCostEnc, List<String> restrictions) {
         if (restrictions.isEmpty())
             throw new IllegalArgumentException("restrictions cannot be empty");
+        this.accessEnc = accessEnc;
+        this.turnCostEnc = turnCostEnc;
         this.restrictions = restrictions;
     }
 
-    // for test only
     @Override
     public DecimalEncodedValue getTurnCostEnc() {
         return turnCostEnc;
-    }
-
-    @Override
-    public void createTurnCostEncodedValues(EncodedValueLookup lookup, List<EncodedValue> registerNewEncodedValue) {
-        String accessKey = getKey(name, "access");
-        accessEnc = lookup.getEncodedValue(accessKey, BooleanEncodedValue.class);
-        registerNewEncodedValue.add(turnCostEnc);
     }
 
     @Override
@@ -84,8 +69,7 @@ public class OSMTurnRelationParser implements TurnCostParser {
     /**
      * Add the specified relation to the TurnCostStorage
      */
-    void addRelationToTCStorage(OSMTurnRelation osmTurnRelation,
-                                ExternalInternalMap map, Graph graph) {
+    void addRelationToTCStorage(OSMTurnRelation osmTurnRelation, ExternalInternalMap map, Graph graph) {
         TurnCostStorage tcs = graph.getTurnCostStorage();
         int viaNode = map.getInternalNodeIdOfOsmNode(osmTurnRelation.getViaOsmNodeId());
         EdgeExplorer edgeOutExplorer = getOutExplorer(graph), edgeInExplorer = getInExplorer(graph);
@@ -127,7 +111,7 @@ public class OSMTurnRelationParser implements TurnCostParser {
 
     @Override
     public String getName() {
-        return name;
+        return turnCostEnc.getName();
     }
 
     @Override
