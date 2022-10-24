@@ -211,11 +211,12 @@ public class MapMatchingTest {
         inputGPXEntries.add(new Observation(new GHPoint(51.2387066, 12.3848887)));
         inputGPXEntries.add(new Observation(new GHPoint(51.4537796, 12.5749469)));
         MatchResult mr = mapMatching.match(inputGPXEntries, false, 0);
-        assertTrue(mapMatching.hasPointsToBeMatched());
         if (!hints.getBool(Parameters.Landmark.DISABLE, true)) {
+            assertFalse(mapMatching.hasPointsToBeMatched());
             assertEquals(3, mapMatching.getProcessedPointsCount());
             assertEquals(46590, mr.getMatchLength(), 100);
         } else {
+            assertTrue(mapMatching.hasPointsToBeMatched());
             assertEquals(2, mapMatching.getProcessedPointsCount());
             assertEquals(1415, mr.getMatchLength(), 10);
         }
