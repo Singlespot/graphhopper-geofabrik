@@ -210,7 +210,7 @@ public class MapMatchingTest {
         inputGPXEntries.add(new Observation(new GHPoint(51.2304303, 12.3853683)));
         inputGPXEntries.add(new Observation(new GHPoint(51.2387066, 12.3848887)));
         inputGPXEntries.add(new Observation(new GHPoint(51.4537796, 12.5749469)));
-        MatchResult mr = mapMatching.match(inputGPXEntries, false, 0);
+        MatchResult mr = mapMatching.match(inputGPXEntries, 0);
         if (!hints.getBool(Parameters.Landmark.DISABLE, true)) {
             assertFalse(mapMatching.hasPointsToBeMatched());
             assertEquals(3, mapMatching.getProcessedPointsCount());

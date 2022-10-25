@@ -201,7 +201,7 @@ public class MapMatching {
      *                of the graph specified in the constructor
      */
     public MatchResult match(List<Observation> observations) {
-        return match(observations, true, 0);
+        return match(observations, 0);
     }
 
     /**
@@ -211,11 +211,10 @@ public class MapMatching {
      *
      * @param gpxList The input list with GPX points which should match to edges
      *                of the graph specified in the constructor
-     * @param ignoreErrors Whether to return ignore unmatchable segments.
      * @param offset Offset to start matching at. This value will be stored and available
      *               using getSuccessfullyMatchedPoints().
      */
-    public MatchResult match(List<Observation> observations, boolean ignoreErrors, int offset) {
+    public MatchResult match(List<Observation> observations, int offset) {
         this.offset = offset;
         resetCounters(observations.size(), offset);
         List<Observation> observationSubList = observations.subList(offset, observations.size());
@@ -235,7 +234,7 @@ public class MapMatching {
         List<ObservationWithCandidateStates> timeSteps = createTimeSteps(filteredObservations, snapsPerObservation);
 
         // Compute the most likely sequence of map matching candidates:
-        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps, ignoreErrors);
+        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps);
 
         List<EdgeIteratorState> path = seq.stream().filter(s1 -> s1.transitionDescriptor != null).flatMap(s1 -> s1.transitionDescriptor.calcEdges().stream()).collect(Collectors.toList());
 
@@ -395,7 +394,7 @@ public class MapMatching {
         double minusLogProbability;
     }
 
-    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean ignoreErrors) {
+    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps) {
         final HmmProbabilities probabilities = new HmmProbabilities(measurementErrorSigma, transitionProbabilityBeta);
         final Map<State, Label> labels = new HashMap<>();
         Map<Transition<State>, Path> roadPaths = new HashMap<>();
@@ -412,7 +411,6 @@ public class MapMatching {
         }
         Label qe = null;
         int lastTimeStepCount = 0;
-        boolean pathFound = false;
         while (!q.isEmpty()) {
             qe = q.poll();
             if (qe.isDeleted) {
@@ -420,11 +418,7 @@ public class MapMatching {
             }
             if (qe.timeStep > lastTimeStepCount) {
                 processedUpTo = offset + filteredIndexMapping.get(qe.timeStep);
-                if (!pathFound && !ignoreErrors) {
-                    break;
-                }                
                 lastTimeStepCount = qe.timeStep;
-                pathFound = false;
             }
             if (qe.timeStep == timeSteps.size() - 1) {
                 break;
@@ -453,7 +447,6 @@ public class MapMatching {
                         q.add(label);
                         labels.put(to, label);
                     }
-                    pathFound = true;
                 }
             }
         }
