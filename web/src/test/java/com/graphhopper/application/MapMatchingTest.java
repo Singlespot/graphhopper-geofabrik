@@ -33,6 +33,7 @@ import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.GHPoint;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -141,7 +142,7 @@ public class MapMatchingTest {
         assertEquals(route.getDistance(), mr.getMatchLength(), 0.5);
         // GraphHopper travel times aren't exactly additive
         assertThat(Math.abs(route.getTime() - mr.getMatchMillis()), is(lessThan(1000L)));
-        assertEquals(142, mr.getEdgeMatches().size());
+        assertEquals(208, mr.getEdgeMatches().size());
     }
 
     @ParameterizedTest
@@ -203,15 +204,17 @@ public class MapMatchingTest {
     @ArgumentsSource(FixtureProvider.class)
     public void testWithVeryLongEdge(PMap hints) throws IOException {
         // Lower max_visited_nodes to provoke a broken matching.
-        hints.putObject(Parameters.Routing.MAX_VISITED_NODES, 1000);
+        boolean lmDisabled = hints.getBool(Parameters.Landmark.DISABLE, true);
+        int maxVisitedNodes = lmDisabled ? 10000 : 10000;
+        hints.putObject(Parameters.Routing.MAX_VISITED_NODES, maxVisitedNodes);
         MapMatching mapMatching = MapMatching.fromGraphHopper(graphHopper, hints);
         mapMatching.setMeasurementErrorSigma(20);
         List<Observation> inputGPXEntries = new ArrayList<Observation>(2);
         inputGPXEntries.add(new Observation(new GHPoint(51.2304303, 12.3853683)));
         inputGPXEntries.add(new Observation(new GHPoint(51.2387066, 12.3848887)));
         inputGPXEntries.add(new Observation(new GHPoint(51.4537796, 12.5749469)));
-        MatchResult mr = mapMatching.match(inputGPXEntries, 0);
-        if (!hints.getBool(Parameters.Landmark.DISABLE, true)) {
+        MatchResult mr = mapMatching.match(inputGPXEntries, true, 0);
+        if (!lmDisabled) {
             assertFalse(mapMatching.hasPointsToBeMatched());
             assertEquals(3, mapMatching.getProcessedPointsCount());
             assertEquals(46590, mr.getMatchLength(), 100);

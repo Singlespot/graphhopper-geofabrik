@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>graphhopper-nav</artifactId>
-    <version>6.2-osm-reader-callbacks</version>
+    <version>7.0-osm-reader-callbacks-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>GraphHopper Navigation</name>
 
     <parent>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-parent</artifactId>
-        <version>6.2-osm-reader-callbacks</version>
+        <version>7.0-osm-reader-callbacks-SNAPSHOT</version>
     </parent>  
 
     <dependencies>

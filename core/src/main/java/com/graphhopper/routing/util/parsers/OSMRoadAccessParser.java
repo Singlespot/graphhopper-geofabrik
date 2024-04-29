@@ -40,18 +40,18 @@ public class OSMRoadAccessParser implements TagParser {
     }
 
     @Override
-    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay readerWay, IntsRef relationFlags) {
+    public void handleWayTags(IntsRef edgeFlags, ReaderWay readerWay, IntsRef relationFlags) {
         RoadAccess accessValue = YES;
         RoadAccess tmpAccessValue;
         for (String restriction : restrictions) {
             String tagValue = readerWay.getTag(restriction);
             if (tagValue != null) {
                 String[] complex = tagValue.split(";");
-                for ( String simple: complex) {
-                   tmpAccessValue = RoadAccess.find(simple);
-                   if (tmpAccessValue != null && tmpAccessValue.ordinal() > accessValue.ordinal()) {
-                       accessValue = tmpAccessValue;
-                   }
+                for (String simple : complex) {
+                    tmpAccessValue = RoadAccess.find(simple);
+                    if (tmpAccessValue != null && tmpAccessValue.ordinal() > accessValue.ordinal()) {
+                        accessValue = tmpAccessValue;
+                    }
                 }
             }
         }
@@ -61,7 +61,6 @@ public class OSMRoadAccessParser implements TagParser {
             accessValue = countryRule.getAccess(readerWay, TransportationMode.CAR, accessValue);
 
         roadAccessEnc.setEnum(false, edgeFlags, accessValue);
-        return edgeFlags;
     }
 
     public static List<String> toOSMRestrictions(TransportationMode mode) {
@@ -82,8 +81,8 @@ public class OSMRoadAccessParser implements TagParser {
                 return Arrays.asList("psv", "motor_vehicle", "vehicle", "access");
             case TRAIN:
                 return Arrays.asList("access");
-            case ANY:
-                return new ArrayList<String>();
+            case BUS:
+                return Arrays.asList("bus", "psv", "motor_vehicle", "vehicle", "access");
             default:
                 throw new IllegalArgumentException("Cannot convert TransportationMode " + mode + " to list of restrictions");
         }
