@@ -289,7 +289,7 @@
         <repository>
             <id>maven.geofabrik.de-write</id>
             <name>Geofabrik Maven GraphHopper repository</name>
-            <url>scpexe://maven@xxx.maven.geofabrik.de:/var/www/webspace/maven.geofabrik.de</url>
+            <url>scpexe://maven@maven.geofabrik.de:/var/www/webspace/maven.geofabrik.de</url>
         </repository>
     </distributionManagement>
 
