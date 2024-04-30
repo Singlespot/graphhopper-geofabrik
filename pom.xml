@@ -291,6 +291,11 @@
             <name>Geofabrik Maven GraphHopper repository</name>
             <url>scpexe://maven@maven.geofabrik.de:/var/www/webspace/maven.geofabrik.de</url>
         </repository>
+        <snapshotRepository>
+          <id>forked-graphhopper-snapshots</id>
+          <name>forked-graphhopper-snapshots</name>
+          <url>file:${project.basedir}/maven_repository</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <!-- mvn clean deploy -P release -->
