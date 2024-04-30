@@ -547,7 +547,7 @@ public class OSMReader {
             }
     }
 
-    private void addRestrictionsToGraph() {
+    protected void addRestrictionsToGraph() {
         // The OSM restriction format is explained here: https://wiki.openstreetmap.org/wiki/Relation:restriction
         List<Triple<ReaderRelation, GraphRestriction, RestrictionMembers>> restrictions = new ArrayList<>(restrictionRelations.size());
         for (ReaderRelation restrictionRelation : restrictionRelations) {
@@ -605,12 +605,12 @@ public class OSMReader {
         }
     }
 
-    private void releaseEverythingExceptRestrictionData() {
+    protected void releaseEverythingExceptRestrictionData() {
         eleProvider.release();
         osmWayIdToRelationFlagsMap = null;
     }
 
-    private void releaseRestrictionData() {
+    protected void releaseRestrictionData() {
         restrictedWaysToEdgesMap = null;
         restrictionRelations = null;
     }
