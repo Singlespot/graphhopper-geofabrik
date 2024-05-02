@@ -1,4 +1,21 @@
-# GraphHopper Routing Engine
+# GraphHopper Routing Engine – Geofabrik Fork
+
+**This is a fork the GraphHopper routing engine with modifications required by non-standard use cases.**
+
+Changes:
+
+* Allow to provide custom callbacks to be called during reading of an OSM file.
+* Add support to add custom turn restrictions at the end of the import.
+* If requested, map matching can return incomplete tracks instead of throwing an exception.
+* Add visibility to some methods to permit overwriting of their implementation.
+* Add transporation mode for trains.
+
+Any code that compiles and runs with GraphHopper should be buildable and runnable with this fork as well.
+Be aware that custom interfaces will be dropped if a sufficient replacement is available upstream.
+
+Released versions of the fork follow this naming schema: `<upstream_version>-osm-reader-callbacks`
+
+**Original readme following:**
 
 ![Build Status](https://github.com/graphhopper/graphhopper/actions/workflows/build.yml/badge.svg?branch=master)
 
