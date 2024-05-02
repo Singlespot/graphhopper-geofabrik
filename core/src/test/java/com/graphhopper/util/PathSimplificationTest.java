@@ -28,6 +28,7 @@ import com.graphhopper.routing.ev.SimpleBooleanEncodedValue;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.TraversalMode;
 import com.graphhopper.routing.weighting.ShortestWeighting;
+import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.BaseGraph;
 import com.graphhopper.storage.NodeAccess;
 import com.graphhopper.util.details.PathDetail;
@@ -37,8 +38,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static com.graphhopper.search.EdgeKVStorage.KeyValue.STREET_NAME;
-import static com.graphhopper.search.EdgeKVStorage.KeyValue.createKV;
+import static com.graphhopper.search.KVStorage.KeyValue.STREET_NAME;
+import static com.graphhopper.search.KVStorage.KeyValue.createKV;
 import static com.graphhopper.util.Parameters.Details.AVERAGE_SPEED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -108,7 +109,7 @@ public class PathSimplificationTest {
         tmpEdge.setWayGeometry(list);
 
         // Path is: [0 0-1, 3 1-4, 6 4-7, 9 7-8, 11 8-9, 10 9-10]
-        ShortestWeighting weighting = new ShortestWeighting(accessEnc, speedEnc);
+        Weighting weighting = new ShortestWeighting(accessEnc, speedEnc);
         Path p = new Dijkstra(g, weighting, tMode).calcPath(0, 10);
         InstructionList wayList = InstructionsFromEdges.calcInstructions(p, g, weighting, carManager, usTR);
         Map<String, List<PathDetail>> details = PathDetailsFromEdges.calcDetails(p, carManager, weighting,

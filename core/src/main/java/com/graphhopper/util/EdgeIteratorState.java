@@ -18,7 +18,7 @@
 package com.graphhopper.util;
 
 import com.graphhopper.routing.ev.*;
-import com.graphhopper.search.EdgeKVStorage;
+import com.graphhopper.search.KVStorage;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.IntsRef;
 
@@ -56,12 +56,12 @@ public interface EdgeIteratorState {
         }
 
         @Override
-        public boolean getBool(boolean reverse, IntsRef ref) {
+        public boolean getBool(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess) {
             return reverse;
         }
 
         @Override
-        public void setBool(boolean reverse, IntsRef ref, boolean value) {
+        public void setBool(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess, boolean value) {
             throw new IllegalStateException("reverse state cannot be modified");
         }
 
@@ -82,13 +82,12 @@ public interface EdgeIteratorState {
      * {@link GHUtility#getEdgeFromEdgeKey(int)}, but the edge key also contains information about the
      * direction of the edge. The edge key is even when the edge is oriented in storage direction and odd
      * otherwise. You can use the edge key to retrieve an edge state in the associated direction using
-     * {@link Graph#getEdgeIteratorStateForKey(int)}. Loop edges are always returned in 'forward' direction even when
-     * you use an odd edge key.
+     * {@link Graph#getEdgeIteratorStateForKey(int)}.
      */
     int getEdgeKey();
 
     /**
-     * Like #getEdgeKey, but returns the reverse key. For loops the reverse key is the same as the key.
+     * Like #getEdgeKey, but returns the reverse key.
      */
     int getReverseEdgeKey();
 
@@ -208,14 +207,14 @@ public interface EdgeIteratorState {
      * But it might be slow and more inefficient on retrieval. Call this setKeyValues method only once per
      * EdgeIteratorState as it allocates new space everytime this method is called.
      */
-    EdgeIteratorState setKeyValues(List<EdgeKVStorage.KeyValue> map);
+    EdgeIteratorState setKeyValues(List<KVStorage.KeyValue> map);
 
     /**
      * This method returns KeyValue pairs for both directions in contrast to {@link #getValue(String)}.
      *
      * @see #setKeyValues(List)
      */
-    List<EdgeKVStorage.KeyValue> getKeyValues();
+    List<KVStorage.KeyValue> getKeyValues();
 
     /**
      * This method returns the *first* value for the specified key and only if stored for the direction of this

@@ -59,10 +59,10 @@ public class RouteResourceTurnCostsTest {
                 putObject("import.osm.ignored_highways", "").
                 putObject("graph.location", DIR)
                 .setProfiles(Arrays.asList(
-                        new Profile("my_car_turn_costs").setVehicle("car").setWeighting("fastest").setTurnCosts(true),
-                        new Profile("my_car_no_turn_costs").setVehicle("car").setWeighting("fastest").setTurnCosts(false),
-                        new Profile("my_custom_car_turn_costs").setVehicle("car").setWeighting("custom").setTurnCosts(true).putHint("custom_model_file", "empty"),
-                        new Profile("my_custom_car_no_turn_costs").setVehicle("car").setWeighting("custom").setTurnCosts(false).putHint("custom_model_file", "empty")
+                        new Profile("my_car_turn_costs").setVehicle("car").setTurnCosts(true),
+                        new Profile("my_car_no_turn_costs").setVehicle("car").setTurnCosts(false),
+                        new Profile("my_custom_car_turn_costs").setVehicle("car").setTurnCosts(true),
+                        new Profile("my_custom_car_no_turn_costs").setVehicle("car").setTurnCosts(false)
                 ))
                 .setCHProfiles(Arrays.asList(
                         new CHProfile("my_car_turn_costs"),

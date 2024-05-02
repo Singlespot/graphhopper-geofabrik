@@ -69,12 +69,13 @@ public class Constants {
     public static final int VERSION_NODE = 9;
     public static final int VERSION_EDGE = 21;
     // this should be increased whenever the format of the serialized EncodingManager is changed
-    public static final int VERSION_EM = 2;
+    public static final int VERSION_EM = 3;
     public static final int VERSION_SHORTCUT = 9;
     public static final int VERSION_NODE_CH = 0;
     public static final int VERSION_GEOMETRY = 6;
+    public static final int VERSION_TURN_COSTS = 0;
     public static final int VERSION_LOCATION_IDX = 5;
-    public static final int VERSION_EDGEKV_STORAGE = 2;
+    public static final int VERSION_KV_STORAGE = 2;
     /**
      * The version without the snapshot string
      */
@@ -147,7 +148,7 @@ public class Constants {
 
     public static String getVersions() {
         return VERSION_NODE + "," + VERSION_EDGE + "," + VERSION_GEOMETRY + "," + VERSION_LOCATION_IDX
-                + "," + VERSION_EDGEKV_STORAGE + "," + VERSION_SHORTCUT;
+                + "," + VERSION_KV_STORAGE + "," + VERSION_SHORTCUT;
     }
 
     public static String getMajorVersion() {

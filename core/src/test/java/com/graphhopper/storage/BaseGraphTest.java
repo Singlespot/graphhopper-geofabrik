@@ -19,7 +19,7 @@ package com.graphhopper.storage;
 
 import com.graphhopper.routing.ev.EnumEncodedValue;
 import com.graphhopper.routing.ev.RoadClass;
-import com.graphhopper.search.EdgeKVStorage.KeyValue;
+import com.graphhopper.search.KVStorage.KeyValue;
 import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.BBox;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.graphhopper.search.EdgeKVStorage.KeyValue.STREET_NAME;
+import static com.graphhopper.search.KVStorage.KeyValue.STREET_NAME;
 import static com.graphhopper.util.EdgeIteratorState.REVERSE_STATE;
 import static com.graphhopper.util.FetchMode.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -251,21 +251,6 @@ public class BaseGraphTest extends AbstractGraphStorageTester {
         assertEdge(g.getEdgeIteratorStateForKey(0), 0, 1, false, 0, 0);
         // opposite direction
         assertEdge(g.getEdgeIteratorStateForKey(1), 1, 0, true, 0, 1);
-    }
-
-    @Test
-    public void testEdgeKey_loop() {
-        BaseGraph g = new BaseGraph.Builder(encodingManager).create();
-        GHUtility.setSpeed(60, true, true, carAccessEnc, carSpeedEnc, g.edge(0, 0).setDistance(10));
-        // storage direction
-        assertEdge(g.getEdgeIteratorState(0, Integer.MIN_VALUE), 0, 0, false, 0, 0);
-        // reverse direction cannot be retrieved, we get forward direction anyway
-        assertEdge(g.getEdgeIteratorState(0, 0), 0, 0, false, 0, 0);
-        // now use the edge key to retrieve the edge
-        assertEdge(g.getEdgeIteratorStateForKey(0), 0, 0, false, 0, 0);
-        // opposite direction could be retrieved like this but to be consistent with getEdgeIteratorState(edge,adj)
-        // we return the forward direction anyway! todo: is this really what we should do? probably related to #1631
-        assertEdge(g.getEdgeIteratorStateForKey(1), 0, 0, false, 0, 0);
     }
 
     private void assertEdge(EdgeIteratorState edge, int base, int adj, boolean reverse, int edgeId, int key) {

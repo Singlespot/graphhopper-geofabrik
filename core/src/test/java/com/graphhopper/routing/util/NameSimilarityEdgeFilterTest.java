@@ -20,7 +20,7 @@ package com.graphhopper.routing.util;
 import com.graphhopper.routing.ev.DecimalEncodedValue;
 import com.graphhopper.routing.ev.DecimalEncodedValueImpl;
 import com.graphhopper.routing.ev.SimpleBooleanEncodedValue;
-import com.graphhopper.search.EdgeKVStorage;
+import com.graphhopper.search.KVStorage;
 import com.graphhopper.storage.BaseGraph;
 import com.graphhopper.storage.NodeAccess;
 import com.graphhopper.util.EdgeIteratorState;
@@ -28,8 +28,8 @@ import com.graphhopper.util.PointList;
 import com.graphhopper.util.shapes.GHPoint;
 import org.junit.jupiter.api.Test;
 
-import static com.graphhopper.search.EdgeKVStorage.KeyValue.STREET_NAME;
-import static com.graphhopper.search.EdgeKVStorage.KeyValue.createKV;
+import static com.graphhopper.search.KVStorage.KeyValue.STREET_NAME;
+import static com.graphhopper.search.KVStorage.KeyValue.createKV;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -307,10 +307,10 @@ public class NameSimilarityEdgeFilterTest {
     private EdgeIteratorState createTestEdgeIterator(String name) {
         PointList pointList = new PointList();
         pointList.add(basePoint);
-        EdgeIteratorState edge = new BaseGraph.Builder(1).create().edge(0, 0)
+        EdgeIteratorState edge = new BaseGraph.Builder(1).create().edge(0, 1)
                 .setWayGeometry(pointList);
         if (name != null)
-            edge.setKeyValues(EdgeKVStorage.KeyValue.createKV(EdgeKVStorage.KeyValue.STREET_NAME, name));
+            edge.setKeyValues(KVStorage.KeyValue.createKV(KVStorage.KeyValue.STREET_NAME, name));
         return edge;
     }
 

@@ -141,7 +141,7 @@ public class DijkstraOneToMany extends AbstractRoutingAlgorithm {
             if (parentNode != EMPTY_PARENT && weights[to] <= weights[currNode])
                 return to;
 
-            if (heap.isEmpty() || isMaxVisitedNodesExceeded())
+            if (heap.isEmpty() || isMaxVisitedNodesExceeded() || isTimeoutExceeded())
                 return NOT_FOUND;
 
             currNode = heap.poll();
@@ -166,7 +166,7 @@ public class DijkstraOneToMany extends AbstractRoutingAlgorithm {
                 if (!accept(iter, prevEdgeId))
                     continue;
 
-                double tmpWeight = GHUtility.calcWeightWithTurnWeightWithAccess(weighting, iter, false, prevEdgeId) + weights[currNode];
+                double tmpWeight = GHUtility.calcWeightWithTurnWeight(weighting, iter, false, prevEdgeId) + weights[currNode];
                 if (Double.isInfinite(tmpWeight))
                     continue;
 
@@ -187,7 +187,7 @@ public class DijkstraOneToMany extends AbstractRoutingAlgorithm {
                 }
             }
 
-            if (heap.isEmpty() || isMaxVisitedNodesExceeded() || isWeightLimitExceeded())
+            if (heap.isEmpty() || isMaxVisitedNodesExceeded() || isWeightLimitExceeded() || isTimeoutExceeded())
                 return NOT_FOUND;
 
             // calling just peek and not poll is important if the next query is cached

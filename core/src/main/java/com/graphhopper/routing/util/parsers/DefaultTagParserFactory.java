@@ -18,6 +18,7 @@
 package com.graphhopper.routing.util.parsers;
 
 import com.graphhopper.routing.ev.*;
+import com.graphhopper.routing.util.FerrySpeedCalculator;
 import com.graphhopper.routing.util.TransportationMode;
 import com.graphhopper.util.PMap;
 
@@ -39,6 +40,8 @@ public class DefaultTagParserFactory implements TagParserFactory {
             return new OSMMaxSpeedParser(lookup.getDecimalEncodedValue(MaxSpeed.KEY));
         else if (name.equals(MaxWeight.KEY))
             return new OSMMaxWeightParser(lookup.getDecimalEncodedValue(MaxWeight.KEY));
+        else if (name.equals(MaxWeightExcept.KEY))
+            return new MaxWeightExceptParser(lookup.getEnumEncodedValue(MaxWeightExcept.KEY, MaxWeightExcept.class));
         else if (name.equals(MaxHeight.KEY))
             return new OSMMaxHeightParser(lookup.getDecimalEncodedValue(MaxHeight.KEY));
         else if (name.equals(MaxWidth.KEY))
@@ -77,6 +80,12 @@ public class DefaultTagParserFactory implements TagParserFactory {
             return new OSMFootwayParser(lookup.getEnumEncodedValue(Footway.KEY, Footway.class));
         else if (name.equals(Country.KEY))
             return new CountryParser(lookup.getEnumEncodedValue(Country.KEY, Country.class));
+        else if (name.equals(State.KEY))
+            return new StateParser(lookup.getEnumEncodedValue(State.KEY, State.class));
+        else if (name.equals(Crossing.KEY))
+            return new OSMCrossingParser(lookup.getEnumEncodedValue(Crossing.KEY, Crossing.class));
+        else if (name.equals(FerrySpeed.KEY))
+            return new FerrySpeedCalculator(lookup.getDecimalEncodedValue(FerrySpeed.KEY));
         return null;
     }
 }

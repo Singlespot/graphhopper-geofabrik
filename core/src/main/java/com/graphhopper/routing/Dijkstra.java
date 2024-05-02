@@ -57,6 +57,7 @@ public class Dijkstra extends AbstractRoutingAlgorithm {
     @Override
     public Path calcPath(int from, int to) {
         checkAlreadyRun();
+        setupFinishTime();
         this.to = to;
         SPTEntry startEntry = new SPTEntry(from, 0);
         fromHeap.add(startEntry);
@@ -72,7 +73,7 @@ public class Dijkstra extends AbstractRoutingAlgorithm {
             if (currEdge.isDeleted())
                 continue;
             visitedNodes++;
-            if (isMaxVisitedNodesExceeded() || finished())
+            if (isMaxVisitedNodesExceeded() || finished() || isTimeoutExceeded())
                 break;
 
             int currNode = currEdge.adjNode;
@@ -81,7 +82,7 @@ public class Dijkstra extends AbstractRoutingAlgorithm {
                 if (!accept(iter, currEdge.edge))
                     continue;
 
-                double tmpWeight = GHUtility.calcWeightWithTurnWeightWithAccess(weighting, iter, false, currEdge.edge) + currEdge.weight;
+                double tmpWeight = GHUtility.calcWeightWithTurnWeight(weighting, iter, false, currEdge.edge) + currEdge.weight;
                 if (Double.isInfinite(tmpWeight)) {
                     continue;
                 }

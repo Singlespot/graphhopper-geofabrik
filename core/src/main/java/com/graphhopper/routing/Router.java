@@ -32,7 +32,7 @@ import com.graphhopper.routing.lm.LandmarkStorage;
 import com.graphhopper.routing.querygraph.QueryGraph;
 import com.graphhopper.routing.util.*;
 import com.graphhopper.routing.weighting.Weighting;
-import com.graphhopper.routing.weighting.custom.CustomProfile;
+import com.graphhopper.routing.weighting.custom.CustomWeighting;
 import com.graphhopper.routing.weighting.custom.FindMinMax;
 import com.graphhopper.storage.BaseGraph;
 import com.graphhopper.storage.Graph;
@@ -390,7 +390,7 @@ public class Router {
             if (!profile.isTurnCosts() && !request.getCurbsides().isEmpty())
                 throw new IllegalArgumentException("To make use of the " + CURBSIDE + " parameter you need to use a profile that supports turn costs" +
                         "\nThe following profiles do support turn costs: " + getTurnCostProfiles());
-            if (request.getCustomModel() != null && !(profile instanceof CustomProfile))
+            if (request.getCustomModel() != null && !CustomWeighting.NAME.equals(profile.getWeighting()))
                 throw new IllegalArgumentException("The requested profile '" + request.getProfile() + "' cannot be used with `custom_model`, because it has weighting=" + profile.getWeighting());
 
             final int uTurnCostsInt = request.getHints().getInt(Parameters.Routing.U_TURN_COSTS, INFINITE_U_TURN_COSTS);
@@ -408,7 +408,7 @@ public class Router {
 
         public DirectedEdgeFilter createDirectedEdgeFilter() {
             BooleanEncodedValue inSubnetworkEnc = lookup.getBooleanEncodedValue(Subnetwork.key(profile.getName()));
-            return (edgeState, reverse) -> !edgeState.get(inSubnetworkEnc) && Double.isFinite(weighting.calcEdgeWeightWithAccess(edgeState, reverse));
+            return (edgeState, reverse) -> !edgeState.get(inSubnetworkEnc) && Double.isFinite(weighting.calcEdgeWeight(edgeState, reverse));
         }
 
         public abstract PathCalculator createPathCalculator(QueryGraph queryGraph);
@@ -425,6 +425,12 @@ public class Router {
 
         int getMaxVisitedNodes(PMap hints) {
             return hints.getInt(Parameters.Routing.MAX_VISITED_NODES, routerConfig.getMaxVisitedNodes());
+        }
+
+        long getTimeoutMillis(PMap hints) {
+            // we silently use the minimum between the requested timeout and the server-side limit
+            // see: https://github.com/graphhopper/graphhopper/pull/2795#discussion_r1168371343
+            return Math.min(routerConfig.getTimeoutMillis(), hints.getLong(TIMEOUT_MS, routerConfig.getTimeoutMillis()));
         }
     }
 
@@ -468,6 +474,7 @@ public class Router {
             PMap opts = new PMap(request.getHints());
             opts.putObject(ALGORITHM, request.getAlgorithm());
             opts.putObject(MAX_VISITED_NODES, getMaxVisitedNodes(request.getHints()));
+            opts.putObject(TIMEOUT_MS, getTimeoutMillis(request.getHints()));
             return new CHPathCalculator(new CHRoutingAlgorithmFactory(getRoutingCHGraph(profile.getName()), queryGraph), opts);
         }
 
@@ -520,6 +527,7 @@ public class Router {
                     setAlgorithm(request.getAlgorithm()).
                     setTraversalMode(profile.isTurnCosts() ? TraversalMode.EDGE_BASED : TraversalMode.NODE_BASED).
                     setMaxVisitedNodes(getMaxVisitedNodes(request.getHints())).
+                    setTimeoutMillis(getTimeoutMillis(request.getHints())).
                     setHints(request.getHints());
 
             // use A* for round trips
@@ -568,9 +576,8 @@ public class Router {
                 throw new IllegalArgumentException("Cannot find LM preparation for the requested profile: '" + profile.getName() + "'" +
                         "\nYou can try disabling LM using " + Parameters.Landmark.DISABLE + "=true" +
                         "\navailable LM profiles: " + landmarks.keySet());
-            if (profile instanceof CustomProfile && request.getCustomModel() != null
-                    && !request.getHints().getBool("lm.disable", false))
-                FindMinMax.checkLMConstraints(((CustomProfile) profile).getCustomModel(), request.getCustomModel(), lookup);
+            if (request.getCustomModel() != null && !request.getHints().getBool("lm.disable", false))
+                FindMinMax.checkLMConstraints(profile.getCustomModel(), request.getCustomModel(), lookup);
             RoutingAlgorithmFactory routingAlgorithmFactory = new LMRoutingAlgorithmFactory(landmarkStorage).setDefaultActiveLandmarks(routerConfig.getActiveLandmarkCount());
             return new FlexiblePathCalculator(queryGraph, routingAlgorithmFactory, weighting, getAlgoOpts());
         }
