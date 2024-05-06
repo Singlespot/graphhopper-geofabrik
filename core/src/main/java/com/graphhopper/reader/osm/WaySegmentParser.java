@@ -30,6 +30,7 @@ import com.graphhopper.util.PointAccess;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.StopWatch;
 import com.graphhopper.util.shapes.GHPoint3D;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,14 +75,15 @@ public class WaySegmentParser {
     };
     private RelationProcessor relationProcessor = (relation, map) -> {
     };
+    private List<ReaderElementHandler> additionalPass2Handlers;
     private EdgeHandler edgeHandler = (from, to, pointList, way, nodeTags) ->
             System.out.println("edge " + from + "->" + to + " (" + pointList.size() + " points)");
     private int workerThreads = 2;
 
-    protected final OSMNodeData nodeData;
+    private final OSMNodeData nodeData;
     private Date timestamp;
 
-    protected WaySegmentParser(OSMNodeData nodeData) {
+    private WaySegmentParser(OSMNodeData nodeData) {
         this.nodeData = nodeData;
     }
 
@@ -95,7 +97,9 @@ public class WaySegmentParser {
         LOGGER.info("Start reading OSM file: '" + osmFile + "'");
         LOGGER.info("pass1 - start");
         StopWatch sw1 = StopWatch.started();
-        readOSM(osmFile, new SkipOptions(true, false, false), new Pass1Handler());
+        List<ReaderElementHandler> handlers1 = new ArrayList<ReaderElementHandler>(1);
+        handlers1.add(new Pass1Handler());
+        readOSM(osmFile, new SkipOptions(true, false, false), handlers1);
         LOGGER.info("pass1 - finished, took: {}", sw1.stop().getTimeString());
 
         long nodes = nodeData.getNodeCount();
@@ -104,7 +108,14 @@ public class WaySegmentParser {
 
         LOGGER.info("pass2 - start");
         StopWatch sw2 = new StopWatch().start();
-        readOSM(osmFile, SkipOptions.none(), new Pass2Handler());
+        Pass2Handler pass2Handler = new Pass2Handler();
+        List<ReaderElementHandler> handlers2 = new ArrayList<ReaderElementHandler>(additionalPass2Handlers.size() + 1);
+        for (ReaderElementHandler h : additionalPass2Handlers) {
+            h.setNodeDataAccess(nodeId -> pass2Handler.getInternalNodeIdOfOSMNode(nodeId));
+        }
+        handlers2.add(pass2Handler);
+        handlers2.addAll(additionalPass2Handlers);
+        readOSM(osmFile, SkipOptions.none(), handlers2);
         LOGGER.info("pass2 - finished, took: {}", sw2.stop().getTimeString());
 
         nodeData.release();
@@ -122,7 +133,7 @@ public class WaySegmentParser {
         return timestamp;
     }
 
-    public class Pass1Handler implements ReaderElementHandler {
+    private class Pass1Handler implements ReaderElementHandler {
         private boolean handledWays;
         private boolean handledRelations;
         private long wayCounter = 0;
@@ -182,7 +193,7 @@ public class WaySegmentParser {
         }
     }
 
-    public class Pass2Handler implements ReaderElementHandler {
+    private class Pass2Handler implements ReaderElementHandler {
         private boolean handledNodes;
         private boolean handledWays;
         private boolean handledRelations;
@@ -394,7 +405,7 @@ public class WaySegmentParser {
         }
     }
 
-    protected void readOSM(File file, SkipOptions skipOptions, ReaderElementHandler... handlers) {
+    protected void readOSM(File file, SkipOptions skipOptions, List<ReaderElementHandler> handlers) {
         try (OSMInput osmInput = openOsmInputFile(file, skipOptions)) {
             ReaderElement elem;
             while ((elem = osmInput.getNext()) != null) {
@@ -425,6 +436,15 @@ public class WaySegmentParser {
          */
         public Builder(PointAccess pointAccess, Directory directory) {
             waySegmentParser = new WaySegmentParser(new OSMNodeData(pointAccess, directory));
+            waySegmentParser.additionalPass2Handlers = new ArrayList<ReaderElementHandler>();
+        }
+
+        /**
+         * Register custom handlers to be run in second pass after built-in Pass2Handler.
+         */
+        public Builder registerPass2Handler(ReaderElementHandler handler) {
+            waySegmentParser.additionalPass2Handlers.add(handler);
+            return this;
         }
 
         /**
@@ -497,6 +517,10 @@ public class WaySegmentParser {
     }
 
     public interface ReaderElementHandler {
+        public interface AccessOSMNodeData {
+            int run(long osmNodeId);
+        }
+
         default void handleElement(ReaderElement elem) throws ParseException {
             switch (elem.getType()) {
                 case NODE:
@@ -529,6 +553,9 @@ public class WaySegmentParser {
         }
 
         default void onFinish() {
+        }
+
+        default void setNodeDataAccess(AccessOSMNodeData nodeDataAccess) {
         }
     }
 
