@@ -15,10 +15,33 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package com.graphhopper.routing.ev;
 
-import com.graphhopper.util.PMap;
+import com.graphhopper.util.Helper;
 
-public interface EncodedValueFactory {
-    EncodedValue create(String name, PMap properties);
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+
+/**
+ * Stores temporary so-called conditional restrictions from access:conditional and other conditional
+ * tags affecting bikes. See OSMRoadAccessConditionalParser.
+ */
+public enum BikeTemporalAccess {
+
+    MISSING, YES, NO;
+
+    public static final Collection<String> CONDITIONALS = new HashSet<>(Arrays.asList("access:conditional",
+            "vehicle:conditional", "bicycle:conditional"));
+    public static final String KEY = "bike_temporal_access";
+
+    public static EnumEncodedValue<BikeTemporalAccess> create() {
+        return new EnumEncodedValue<>(KEY, BikeTemporalAccess.class);
+    }
+
+    @Override
+    public String toString() {
+        return Helper.toLowerCase(super.toString());
+    }
 }

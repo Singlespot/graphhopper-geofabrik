@@ -23,8 +23,6 @@ import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.routing.ev.*;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.PriorityCode;
-import com.graphhopper.routing.util.VehicleEncodedValues;
-import com.graphhopper.routing.util.VehicleTagParsers;
 import com.graphhopper.storage.IntsRef;
 import com.graphhopper.util.PMap;
 import org.junit.jupiter.api.Test;
@@ -42,12 +40,31 @@ public class BikeTagParserTest extends AbstractBikeTagParserTester {
 
     @Override
     protected EncodingManager createEncodingManager() {
-        return new EncodingManager.Builder().add(VehicleEncodedValues.bike(new PMap())).build();
+        return new EncodingManager.Builder()
+                .add(VehicleAccess.create("bike"))
+                .add(VehicleSpeed.create("bike", 4, 2, false))
+                .add(VehiclePriority.create("bike", 4, PriorityCode.getFactor(1), false))
+                .add(Roundabout.create())
+                .add(Smoothness.create())
+                .add(FerrySpeed.create())
+                .add(RouteNetwork.create(BikeNetwork.KEY))
+                .add(RouteNetwork.create(MtbNetwork.KEY))
+                .build();
     }
 
     @Override
-    protected VehicleTagParsers createBikeTagParsers(EncodedValueLookup lookup, PMap pMap) {
-        return VehicleTagParsers.bike(lookup, pMap);
+    protected BikeCommonAccessParser createAccessParser(EncodedValueLookup lookup, PMap pMap) {
+        return new BikeAccessParser(lookup, pMap);
+    }
+
+    @Override
+    protected BikeCommonAverageSpeedParser createAverageSpeedParser(EncodedValueLookup lookup) {
+        return new BikeAverageSpeedParser(lookup);
+    }
+
+    @Override
+    protected BikeCommonPriorityParser createPriorityParser(EncodedValueLookup lookup) {
+        return new BikePriorityParser(lookup);
     }
 
     @Test
@@ -223,7 +240,7 @@ public class BikeTagParserTest extends AbstractBikeTagParserTester {
         way.setTag("highway", "track");
         way.setTag("bicycle", "yes");
         way.setTag("surface", "fine_gravel");
-        assertPriorityAndSpeed(UNCHANGED, 18, way);
+        assertPriorityAndSpeed(UNCHANGED, 14, way);
 
         way.setTag("surface", "unknown_surface");
         assertPriorityAndSpeed(UNCHANGED, PUSHING_SECTION_SPEED, way);
@@ -231,7 +248,7 @@ public class BikeTagParserTest extends AbstractBikeTagParserTester {
         way.clearTags();
         way.setTag("highway", "primary");
         way.setTag("surface", "fine_gravel");
-        assertPriorityAndSpeed(BAD, 18, way);
+        assertPriorityAndSpeed(BAD, 14, way);
 
         way.clearTags();
         way.setTag("highway", "track");
@@ -316,6 +333,8 @@ public class BikeTagParserTest extends AbstractBikeTagParserTester {
         way.clearTags();
         way.setTag("highway", "primary");
         way.setTag("cycleway:right", "lane");
+        assertPriority(SLIGHT_PREFER, way);
+        way.setTag("cycleway:left", "no");
         assertPriority(SLIGHT_PREFER, way);
 
         way.clearTags();
@@ -594,6 +613,40 @@ public class BikeTagParserTest extends AbstractBikeTagParserTester {
         osmWay.setTag("highway", "motorway");
         osmWay.setTag("bicycle", "yes");
         assertPriority(REACH_DESTINATION, osmWay);
+    }
+
+    @Test
+    public void temporalAccess() {
+        int edgeId = 0;
+        ArrayEdgeIntAccess access = new ArrayEdgeIntAccess(1);
+        ReaderWay way = new ReaderWay(1);
+        way.setTag("highway", "primary");
+        way.setTag("access:conditional", "no @ (May - June)");
+        accessParser.handleWayTags(edgeId, access, way, null);
+        assertTrue(accessEnc.getBool(false, edgeId, access));
+
+        access = new ArrayEdgeIntAccess(1);
+        way = new ReaderWay(1);
+        way.setTag("highway", "primary");
+        way.setTag("bicycle:conditional", "no @ (May - June)");
+        accessParser.handleWayTags(edgeId, access, way, null);
+        assertTrue(accessEnc.getBool(false, edgeId, access));
+
+        access = new ArrayEdgeIntAccess(1);
+        way = new ReaderWay(1);
+        way.setTag("highway", "primary");
+        way.setTag("bicycle", "no");
+        way.setTag("access:conditional", "yes @ (May - June)");
+        accessParser.handleWayTags(edgeId, access, way, null);
+        assertFalse(accessEnc.getBool(false, edgeId, access));
+
+        access = new ArrayEdgeIntAccess(1);
+        way = new ReaderWay(1);
+        way.setTag("highway", "primary");
+        way.setTag("access", "no");
+        way.setTag("bicycle:conditional", "yes @ (May - June)");
+        accessParser.handleWayTags(edgeId, access, way, null);
+        assertTrue(accessEnc.getBool(false, edgeId, access));
     }
 
 }

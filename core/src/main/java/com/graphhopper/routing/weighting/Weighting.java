@@ -25,15 +25,14 @@ import com.graphhopper.util.EdgeIteratorState;
  * @author Peter Karich
  */
 public interface Weighting {
-    int INFINITE_U_TURN_COSTS = -1;
 
     /**
      * Used only for the heuristic estimation in A*
      *
-     * @return minimal weight for the specified distance in meter. E.g. if you calculate the fastest
-     * way the return value is 'distance/max_velocity'
+     * @return minimal weight per meter. E.g. if you calculate the fastest way the return value
+     * is '1/max_velocity' or a shortest weighting would return 1.
      */
-    double getMinWeight(double distance);
+    double calcMinWeightPerDistance();
 
     /**
      * This method calculates the weight of a given {@link EdgeIteratorState}. E.g. a high value indicates that the edge
@@ -67,4 +66,10 @@ public interface Weighting {
 
     String getName();
 
+    static boolean isValidName(String name) {
+        if (name == null || name.isEmpty())
+            return false;
+
+        return name.matches("[\\|_a-z]+");
+    }
 }

@@ -26,7 +26,7 @@ package com.graphhopper.routing.util;
  */
 public enum TransportationMode {
     OTHER(false), FOOT(false), VEHICLE(false), BIKE(false),
-    CAR(true), MOTORCYCLE(true), HGV(true), PSV(true), BUS(true), TRAIN(false);
+    CAR(true), MOTORCYCLE(true), HGV(true), PSV(true), BUS(true), HOV(true), TRAIN(false);
 
     private final boolean motorVehicle;
 
