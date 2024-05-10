@@ -236,7 +236,7 @@ public class RouteResource {
                 header("Content-Disposition", "attachment;filename=" + "GraphHopper.gpx");
     }
 
-    static void initHints(PMap m, MultivaluedMap<String, String> parameterMap) {
+    public static void initHints(PMap m, MultivaluedMap<String, String> parameterMap) {
         for (Map.Entry<String, List<String>> e : parameterMap.entrySet()) {
             if (e.getValue().size() == 1) {
                 m.putObject(Helper.camelCaseToUnderScore(e.getKey()), Helper.toObject(e.getValue().get(0)));
