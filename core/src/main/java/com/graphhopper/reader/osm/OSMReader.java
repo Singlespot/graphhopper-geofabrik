@@ -101,6 +101,11 @@ public class OSMReader {
     private WayToEdgesMap restrictedWaysToEdgesMap = new WayToEdgesMap();
     private List<ReaderRelation> restrictionRelations = new ArrayList<>();
 
+    @FunctionalInterface
+    public interface Builder<ReaderClass> {
+        ReaderClass apply(BaseGraph baseGraph, OSMParsers osmParsers, OSMReaderConfig config);
+    }
+
     public OSMReader(BaseGraph baseGraph, OSMParsers osmParsers, OSMReaderConfig config) {
         this.baseGraph = baseGraph;
         this.edgeIntAccess = baseGraph.createEdgeIntAccess();

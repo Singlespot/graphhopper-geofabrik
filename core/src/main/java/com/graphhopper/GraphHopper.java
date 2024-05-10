@@ -67,6 +67,7 @@ import java.text.DateFormat;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.graphhopper.util.GHUtility.readCountries;
@@ -135,6 +136,20 @@ public class GraphHopper {
 
     private String dateRangeParserString = "";
     private String encodedValuesString = "";
+
+    private Supplier<OSMParsers> osmParsersSupplier = OSMParsers::new;
+    private OSMReader.Builder<OSMReader> osmReaderSupplier = (baseGraph, osmParsers, config) -> new OSMReader(baseGraph, osmParsers, config);
+
+    public GraphHopper setOsmParsersSupplier(Supplier<OSMParsers> supplier) {
+        osmParsersSupplier = supplier;
+        return this;
+    }
+
+    public GraphHopper setOsmReaderSupplier(OSMReader.Builder<OSMReader> supplier) {
+        osmReaderSupplier = supplier;
+        return this;
+    }
+
 
     public GraphHopper setEncodedValuesString(String encodedValuesString) {
         this.encodedValuesString = encodedValuesString;
@@ -640,7 +655,7 @@ public class GraphHopper {
                 sortedParsers.add(createTagParser.apply(encodingManager, encodedValuesWithProps.getOrDefault(name, new PMap().putObject("date_range_parser", dateRangeParser))));
         });
 
-        OSMParsers osmParsers = new OSMParsers();
+        OSMParsers osmParsers = osmParsersSupplier.get();
         ignoredHighways.forEach(osmParsers::addIgnoredHighway);
         sortedParsers.forEach(osmParsers::addWayTagParser);
 
@@ -914,7 +929,7 @@ public class GraphHopper {
         }
 
         logger.info("start creating graph from " + osmFile);
-        OSMReader reader = new OSMReader(baseGraph.getBaseGraph(), osmParsers, osmReaderConfig).setFile(_getOSMFile()).
+        OSMReader reader = osmReaderSupplier.apply(baseGraph.getBaseGraph(), osmParsers, osmReaderConfig).setFile(_getOSMFile()).
                 setAreaIndex(areaIndex).
                 setElevationProvider(eleProvider).
                 setCountryRuleFactory(countryRuleFactory);
