@@ -55,6 +55,10 @@ public abstract class ReaderElement {
         this.properties = properties;
     }
 
+    protected ReaderElement(ReaderElement other) {
+        this(other.id, other.type, other.properties);
+    }
+
     public long getId() {
         return id;
     }
