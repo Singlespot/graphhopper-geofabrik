@@ -17,6 +17,7 @@ public class TurnCostsConfig {
             "minibus", "mofa", "moped", "motorcar", "motorcycle", "motor_vehicle", "motorhome",
             "nev", "ohv", "psv", "residents",
             "share_taxi", "small_electric_vehicle", "speed_pedelec",
+            "train", "light_rail", "tram", "subway",
             "taxi", "trailer", "tourist_bus");
 
     public static TurnCostsConfig car() {
