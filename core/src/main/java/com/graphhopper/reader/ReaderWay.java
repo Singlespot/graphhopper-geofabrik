@@ -33,7 +33,7 @@ public class ReaderWay extends ReaderElement {
     }
 
     public ReaderWay(ReaderWay other) {
-        super(other.getId(), other.getType());
+        super(other.getId(), other.getType(), other.getTags());
         this.nodes = other.getNodes();
     }
 
