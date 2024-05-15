@@ -149,12 +149,12 @@ public class IntEncodedValueImpl implements IntEncodedValue {
     }
 
     @Override
-    public final void setInt(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess, int value) {
+    public void setInt(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess, int value) {
         checkValue(value);
         uncheckedSet(reverse, edgeId, edgeIntAccess, value);
     }
 
-    private void checkValue(int value) {
+    protected void checkValue(int value) {
         if (!isInitialized())
             throw new IllegalStateException("EncodedValue " + getName() + " not initialized");
         if (value > maxStorableValue)
@@ -163,7 +163,7 @@ public class IntEncodedValueImpl implements IntEncodedValue {
             throw new IllegalArgumentException(name + " value too small for encoding " + value + ", minValue:" + minStorableValue);
     }
 
-    final void uncheckedSet(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess, int value) {
+    final protected void uncheckedSet(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess, int value) {
         if (negateReverseDirection) {
             if (reverse) {
                 reverse = false;
@@ -188,7 +188,7 @@ public class IntEncodedValueImpl implements IntEncodedValue {
     }
 
     @Override
-    public final int getInt(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess) {
+    public int getInt(boolean reverse, int edgeId, EdgeIntAccess edgeIntAccess) {
         int flags;
         // if we do not store both directions ignore reverse == true for convenient reading
         if (storeTwoDirections && reverse) {
