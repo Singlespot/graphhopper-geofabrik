@@ -33,10 +33,7 @@ public class ReaderWay extends ReaderElement {
     }
 
     public ReaderWay(ReaderWay other) {
-        super(other.getId(), other.getType());
-        for (String key : other.getTags().keySet()) {
-            setTag(key, other.getTag(key));
-        }
+        super(other);
         this.nodes = other.getNodes();
     }
 

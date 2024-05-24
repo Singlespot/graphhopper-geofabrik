@@ -56,7 +56,8 @@ public abstract class ReaderElement {
     }
 
     protected ReaderElement(ReaderElement other) {
-        this(other.id, other.type, other.properties);
+        this(other.id, other.type);
+        setTags(other.getTags());
     }
 
     public long getId() {
