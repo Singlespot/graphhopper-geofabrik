@@ -34,6 +34,8 @@ import com.graphhopper.jackson.ResponsePathSerializer;
 import com.graphhopper.matching.*;
 import com.graphhopper.storage.index.LocationIndexTree;
 import com.graphhopper.util.*;
+import com.graphhopper.util.shapes.GHPoint;
+import com.graphhopper.util.shapes.GHPoint3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +105,10 @@ public class MapMatchingResource {
             @QueryParam("gpx.route") @DefaultValue("true") boolean withRoute,
             @QueryParam("gpx.track") @DefaultValue("true") boolean withTrack,
             @QueryParam("traversal_keys") @DefaultValue("false") boolean enableTraversalKeys,
-            @QueryParam("gps_accuracy") @DefaultValue("10") double gpsAccuracy) {
+            @QueryParam("gps_accuracy") @DefaultValue("40") double gpsAccuracy,
+            @QueryParam(MAX_VISITED_NODES) @DefaultValue("3000") int maxVisitedNodes,
+            @QueryParam("max_processing_time") @DefaultValue("120") int maxProcessingTimeSeconds) {
+
         boolean writeGPX = "gpx".equalsIgnoreCase(outType);
         if (gpx.trk.isEmpty()) {
             throw new IllegalArgumentException("No tracks found in GPX document. Are you using waypoints or routes instead?");
@@ -119,6 +124,9 @@ public class MapMatchingResource {
         PMap hints = new PMap();
         RouteResource.initHints(hints, uriInfo.getQueryParameters());
 
+        // add values that are not in hints because they were explicitly listed in query params
+        hints.putObject(MAX_VISITED_NODES, maxVisitedNodes);
+
         // resolve profile and remove legacy vehicle/weighting parameters
         // we need to explicitly disable CH here because map matching does not use it
         PMap profileResolverHints = new PMap(hints);
@@ -130,9 +138,10 @@ public class MapMatchingResource {
 
         MapMatching matching = new MapMatching(graphHopper.getBaseGraph(), (LocationIndexTree) graphHopper.getLocationIndex(), mapMatchingRouterFactory.createMapMatchingRouter(hints));
         matching.setMeasurementErrorSigma(gpsAccuracy);
+        matching.setMaxProcessingTimeSeconds(maxProcessingTimeSeconds);
 
         List<Observation> measurements = GpxConversions.getEntries(gpx.trk.get(0));
-        MatchResult matchResult = matching.match(measurements);
+        MatchResult matchResult = matching.match(measurements, sw);
 
         sw.stop();
         logger.info(objectMapper.createObjectNode()
@@ -187,6 +196,32 @@ public class MapMatchingResource {
                         traversalKeylist.add(edge.getEdgeKey());
                     }
                     map.putPOJO("traversal_keys", traversalKeylist);
+                }
+                if (responsePath.getPathDetails().get("edge_key") != null) {
+                    List<Object> observationIndexes = new ArrayList<>();
+                    int i = 0;
+                    assert matchResult.getEdgeMatches().size() == responsePath.getPathDetails().get("edge_key").size();
+                    for (EdgeMatch em : matchResult.getEdgeMatches()) {
+                        if (em.getStates().size() > 0) {
+                            for (State state : em.getStates()) {
+                                GHPoint point = state.getEntry().getPoint();
+                                GHPoint3D snappedPoint = state.getSnap().getSnappedPoint();
+                                int snappedEdgeStartPointIdx = responsePath.getPathDetails().get("edge_key").get(i).getFirst();
+                                int snappedEdgeLastPointIdx = responsePath.getPathDetails().get("edge_key").get(i).getLast();
+                                int bestCandidateIdx = -1;
+                                for (int j = snappedEdgeStartPointIdx; j <= snappedEdgeLastPointIdx; j++) {
+                                    GHPoint3D candidate = responsePath.getPoints().get(j);
+                                    if (candidate.getLat() == snappedPoint.getLat() && candidate.getLon() == snappedPoint.getLon()) {
+                                        bestCandidateIdx = j;
+                                        break;
+                                    }
+                                }
+                                observationIndexes.add(new ArrayList<Integer>(Arrays.asList(point.index, bestCandidateIdx)));
+                            }
+                        }
+                        i++;
+                    }
+                    map.putPOJO("observation_indexes", observationIndexes);
                 }
                 return Response.ok(map).
                         header("X-GH-Took", "" + Math.round(sw.getMillisDouble())).

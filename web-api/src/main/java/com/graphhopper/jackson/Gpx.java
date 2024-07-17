@@ -58,6 +58,21 @@ public class Gpx {
         public double lat;
         public double lon;
 
+        @JacksonXmlElementWrapper(useWrapping = false)
+        public List<TrkExtensions> extensions = new ArrayList<>();
+
+        public double getAccuracy() {
+            if (extensions.size() > 0) {
+                return extensions.get(0).accuracy;
+            }
+            return Double.NaN;
+        }
+
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TrkExtensions {
+        public double accuracy;
     }
 
     @JacksonXmlElementWrapper(useWrapping = false)

@@ -79,6 +79,7 @@ public class MapMatching {
     private int offset = 0;
     /// indexes of observations after filtering
     private List<Integer> filteredIndexMapping = new ArrayList<Integer>();
+    private int maxProcessingTimeSeconds = 120;
 
     // number of points after removing duplicates and points from the input having a
     // distance shorter than the measurement accuracy
@@ -225,6 +226,13 @@ public class MapMatching {
     }
 
     /**
+     * Maximum time in seconds to spend on map matching one GPX file.
+     */
+    public void setMaxProcessingTimeSeconds(int maxProcessingTimeSeconds) {
+        this.maxProcessingTimeSeconds = maxProcessingTimeSeconds;
+    }
+
+    /**
      * This method does the actual map matching.
      * <p>
      * It will throw an exception if a segment of the input list cannot be matched.
@@ -232,8 +240,8 @@ public class MapMatching {
      * @param gpxList the input list with GPX points which should match to edges
      *                of the graph specified in the constructor
      */
-    public MatchResult match(List<Observation> observations) {
-        return match(observations, false, 0);
+    public MatchResult match(List<Observation> observations, StopWatch sw) {
+        return match(observations, false, 0, sw);
     }
 
     /**
@@ -241,13 +249,13 @@ public class MapMatching {
      * <p>
      * It will start at the provided index.
      *
-     * @param gpxList The input list with GPX points which should match to edges
-     *                of the graph specified in the constructor
+     * @param gpxList      The input list with GPX points which should match to edges
+     *                     of the graph specified in the constructor
      * @param ignoreErrors Whether to ignore unmatchable segments.
-     * @param offset Offset to start matching at. This value will be stored and available
-     *               using getSuccessfullyMatchedPoints().
+     * @param offset       Offset to start matching at. This value will be stored and available
+     *                     using getSuccessfullyMatchedPoints().
      */
-    public MatchResult match(List<Observation> observations, boolean ignoreErrors, int offset) {
+    public MatchResult match(List<Observation> observations, boolean ignoreErrors, int offset, StopWatch sw) {
         this.offset = offset;
         resetCounters(observations.size(), offset);
         List<Observation> observationSubList = observations.subList(offset, observations.size());
@@ -256,7 +264,7 @@ public class MapMatching {
 
         // Snap observations to links. Generates multiple candidate snaps per observation.
         List<List<Snap>> snapsPerObservation = filteredObservations.stream()
-                .map(o -> findCandidateSnaps(o.getPoint().lat, o.getPoint().lon))
+                .map(o -> findCandidateSnaps(o.getPoint().lat, o.getPoint().lon, o.getPoint().accuracy))
                 .collect(Collectors.toList());
         statistics.put("snapsPerObservation", snapsPerObservation.stream().mapToInt(Collection::size).toArray());
 
@@ -269,7 +277,7 @@ public class MapMatching {
         List<ObservationWithCandidateStates> timeSteps = createTimeSteps(filteredObservations, snapsPerObservation);
 
         // Compute the most likely sequence of map matching candidates:
-        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps, ignoreErrors);
+        List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps, ignoreErrors, sw);
         statistics.put("transitionDistances", seq.stream().filter(s -> s.transitionDescriptor != null).mapToLong(s -> Math.round(s.transitionDescriptor.getDistance())).toArray());
         statistics.put("visitedNodes", router.getVisitedNodes());
         statistics.put("snapDistanceRanks", IntStream.range(0, seq.size()).map(i -> snapsPerObservation.get(i).indexOf(seq.get(i).state.getSnap())).toArray());
@@ -331,9 +339,10 @@ public class MapMatching {
         return filtered;
     }
 
-    public List<Snap> findCandidateSnaps(final double queryLat, final double queryLon) {
-        double rLon = (measurementErrorSigma * 360.0 / DistanceCalcEarth.DIST_EARTH.calcCircumference(queryLat));
-        double rLat = measurementErrorSigma / DistanceCalcEarth.METERS_PER_DEGREE;
+    public List<Snap> findCandidateSnaps(final double queryLat, final double queryLon, final double queryMeasurementErrorSigma) {
+        double errorSigma = Double.isNaN(queryMeasurementErrorSigma) ? measurementErrorSigma : queryMeasurementErrorSigma;
+        double rLon = (errorSigma * 360.0 / DistanceCalcEarth.DIST_EARTH.calcCircumference(queryLat));
+        double rLat = errorSigma / DistanceCalcEarth.METERS_PER_DEGREE;
         Envelope envelope = new Envelope(queryLon, queryLon, queryLat, queryLat);
         for (int i = 0; i < 50; i++) {
             envelope.expandBy(rLon, rLat);
@@ -435,7 +444,7 @@ public class MapMatching {
         double minusLogProbability;
     }
 
-    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean ignoreErrors) {
+    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean ignoreErrors, StopWatch sw) {
         if (timeSteps.isEmpty()) {
             return Collections.emptyList();
         }
@@ -443,6 +452,8 @@ public class MapMatching {
         final HmmProbabilities probabilities = new HmmProbabilities(measurementErrorSigma, transitionProbabilityBeta);
         final Map<State, Label> labels = new HashMap<>();
         Map<Transition<State>, Path> roadPaths = new HashMap<>();
+        Label maxTimeStep = new Label();
+        maxTimeStep.timeStep = -1;
 
         PriorityQueue<Label> q = new PriorityQueue<>(Comparator.comparing(qe -> qe.minusLogProbability));
         for (State candidate : timeSteps.get(0).candidates) {
@@ -456,7 +467,7 @@ public class MapMatching {
         }
         Label qe = null;
         int lastTimeStepCount = 0;
-        while (!q.isEmpty()) {
+        while (!q.isEmpty() && sw.getCurrentSeconds() < maxProcessingTimeSeconds) {
             qe = q.poll();
             if (qe.isDeleted) {
                 continue;
@@ -464,6 +475,7 @@ public class MapMatching {
             if (qe.timeStep > lastTimeStepCount) {
                 processedUpTo = offset + filteredIndexMapping.get(qe.timeStep);
                 lastTimeStepCount = qe.timeStep;
+                maxTimeStep = qe;
             }
             if (qe.timeStep == timeSteps.size() - 1) {
                 break;
@@ -505,10 +517,15 @@ public class MapMatching {
             throw new IllegalArgumentException("Sequence is broken for submitted track at initial time step.");
         }
         if (qe.timeStep != timeSteps.size() - 1) {
-            if (!ignoreErrors) {
+            if (sw.getCurrentSeconds() >= maxProcessingTimeSeconds) {
+                throw new IllegalArgumentException("Time limit of " + maxProcessingTimeSeconds + "s exceeded.");
+            } else if (!ignoreErrors) {
                 // If errors should be ignored, return incomplete sequence instead of throwing an exception.
-                throw new IllegalArgumentException("Sequence is broken for submitted track at time step "
-                        + qe.timeStep + ". observation:" + qe.state.getEntry());
+                throw new IllegalArgumentException("Sequence is broken for submitted track at index "
+                        + maxTimeStep.state.getEntry().getPoint().index + ". "
+                        + "observation:" + maxTimeStep.state.getEntry() + ", "
+                        + "next index is " + timeSteps.get(maxTimeStep.timeStep + 1).observation.getPoint().index
+                        + ". If a match is expected consider increasing max_visited_nodes.");
             }
         }
         ArrayList<SequenceState<State, Observation, Path>> result = new ArrayList<>();

@@ -6,7 +6,7 @@
     <groupId>com.graphhopper</groupId>
     <artifactId>graphhopper-parent</artifactId>
     <name>GraphHopper Parent Project</name>
-    <version>9.1-osm-reader-callbacks</version>
+    <version>9.1-osm-reader-callbacks-spt-1.0</version>
     <packaging>pom</packaging>
     <url>https://www.graphhopper.com</url>
     <inceptionYear>2012</inceptionYear>
@@ -286,9 +286,9 @@
 
     <distributionManagement>
         <repository>
-            <id>maven.geofabrik.de-write</id>
+            <id>github</id>
             <name>Geofabrik Maven GraphHopper repository</name>
-            <url>scpexe://maven@maven.geofabrik.de:/var/www/webspace/maven.geofabrik.de</url>
+            <url>https://maven.pkg.github.com/singlespot/graphhopper-geofabrik</url>
         </repository>
         <snapshotRepository>
           <id>forked-graphhopper-snapshots</id>

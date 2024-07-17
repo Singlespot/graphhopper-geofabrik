@@ -19,6 +19,8 @@ package com.graphhopper.util.shapes;
 
 import com.graphhopper.util.NumHelper;
 
+import java.util.Date;
+
 /**
  * @author Peter Karich
  */
@@ -27,6 +29,11 @@ public class GHPoint3D extends GHPoint {
 
     public GHPoint3D(double lat, double lon, double elevation) {
         super(lat, lon);
+        this.ele = elevation;
+    }
+
+    public GHPoint3D(double lat, double lon, double elevation, double accuracy, int index, Date timestamp) {
+        super(lat, lon, accuracy, index, timestamp);
         this.ele = elevation;
     }
 
@@ -46,23 +53,22 @@ public class GHPoint3D extends GHPoint {
         if (obj == null)
             return false;
 
-        @SuppressWarnings("unchecked")
-        final GHPoint3D other = (GHPoint3D) obj;
-        if (Double.isNaN(ele))
+        @SuppressWarnings("unchecked") final GHPoint3D other = (GHPoint3D) obj;
+        if (Double.isNaN(ele) || Double.isNaN(accuracy))
             // very special case necessary in QueryGraph, asserted via test
             return NumHelper.equalsEps(lat, other.lat) && NumHelper.equalsEps(lon, other.lon);
         else
             return NumHelper.equalsEps(lat, other.lat) && NumHelper.equalsEps(lon, other.lon)
-                    && NumHelper.equalsEps(ele, other.ele);
+                    && NumHelper.equalsEps(ele, other.ele) && NumHelper.equalsEps(accuracy, other.accuracy);
     }
 
     @Override
     public String toString() {
-        return super.toString() + "," + ele;
+        return super.toString() + "," + ele + "," + accuracy + ',' + index + ',' + timestamp;
     }
 
     @Override
     public Double[] toGeoJson() {
-        return new Double[]{lon, lat, ele};
+        return new Double[]{lon, lat, ele, accuracy};
     }
 }

@@ -20,6 +20,7 @@ package com.graphhopper.util.shapes;
 import com.graphhopper.util.NumHelper;
 import org.locationtech.jts.geom.Point;
 
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -28,8 +29,19 @@ import java.util.Locale;
 public class GHPoint {
     public double lat = Double.NaN;
     public double lon = Double.NaN;
+    public double accuracy = Double.NaN;
+    public int index;
+    public Date timestamp;
 
     public GHPoint() {
+    }
+
+    public GHPoint(double lat, double lon, double accuracy, int index, Date timestamp) {
+        this.lat = lat;
+        this.lon = lon;
+        this.accuracy = accuracy;
+        this.index = index;
+        this.timestamp = timestamp;
     }
 
     public GHPoint(double lat, double lon) {

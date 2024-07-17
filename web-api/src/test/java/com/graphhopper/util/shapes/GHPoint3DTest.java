@@ -19,6 +19,8 @@ package com.graphhopper.util.shapes;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -32,16 +34,16 @@ public class GHPoint3DTest {
         GHPoint3D point2 = new GHPoint3D(1, 2, Double.NaN);
         assertEquals(point1, point2);
 
-        point1 = new GHPoint3D(1, 2, 0);
-        point2 = new GHPoint3D(1, 2, 1);
-        assertNotEquals(point1, point2);
-
-        point1 = new GHPoint3D(1, 2, 0);
-        point2 = new GHPoint3D(1, 2.1, 0);
-        assertNotEquals(point1, point2);
-
-        point1 = new GHPoint3D(1, 2.1, 0);
-        point2 = new GHPoint3D(1, 2.1, 0);
+        point1 = new GHPoint3D(1, 2, 3, Double.NaN, 1, new Date());
+        point2 = new GHPoint3D(1, 2, 3, Double.NaN, 2, new Date());
         assertEquals(point1, point2);
+
+        point1 = new GHPoint3D(1, 2, 0, 0, 1, new Date());
+        point2 = new GHPoint3D(1, 2, 1, 0, 2, new Date());
+        assertNotEquals(point1, point2);
+
+        point1 = new GHPoint3D(1, 2, 0, 0, 1, new Date());
+        point2 = new GHPoint3D(1, 2, 0, 1, 2, new Date());
+        assertNotEquals(point1, point2);
     }
 }

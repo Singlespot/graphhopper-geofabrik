@@ -216,8 +216,10 @@ public class GpxConversions {
     public static List<Observation> getEntries(Gpx.Trk trk) {
         ArrayList<Observation> gpxEntries = new ArrayList<>();
         for (Gpx.Trkseg t : trk.trkseg) {
+            int index = 0;
             for (Gpx.Trkpt trkpt : t.trkpt) {
                 gpxEntries.add(new Observation(new GHPoint3D(trkpt.lat, trkpt.lon, trkpt.ele)));
+                index++;
             }
         }
         return gpxEntries;

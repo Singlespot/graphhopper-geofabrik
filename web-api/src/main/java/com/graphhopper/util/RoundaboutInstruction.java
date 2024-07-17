@@ -98,6 +98,7 @@ public class RoundaboutInstruction extends Instruction {
     @Override
     public Map<String, Object> getExtraInfoJSON() {
         Map<String, Object> tmpMap = new HashMap<>(3);
+        tmpMap.putAll(extraInfo);
         tmpMap.put("exit_number", getExitNumber());
         tmpMap.put("exited", this.exited);
         double tmpAngle = getTurnAngle();
