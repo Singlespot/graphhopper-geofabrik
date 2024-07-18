@@ -218,7 +218,7 @@ public class GpxConversions {
         for (Gpx.Trkseg t : trk.trkseg) {
             int index = 0;
             for (Gpx.Trkpt trkpt : t.trkpt) {
-                gpxEntries.add(new Observation(new GHPoint3D(trkpt.lat, trkpt.lon, trkpt.ele)));
+                gpxEntries.add(new Observation(new GHPoint3D(trkpt.lat, trkpt.lon, trkpt.ele, trkpt.getAccuracy(), index, trkpt.time)));
                 index++;
             }
         }
