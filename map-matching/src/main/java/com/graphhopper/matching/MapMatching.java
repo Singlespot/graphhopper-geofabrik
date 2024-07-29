@@ -466,7 +466,7 @@ public class MapMatching {
             labels.put(candidate, label);
         }
         Label qe = null;
-        int lastTimeStepCount = 0;
+        int lastTimeStepCount = -1;
         while (!q.isEmpty() && sw.getCurrentSeconds() < maxProcessingTimeSeconds) {
             qe = q.poll();
             if (qe.isDeleted) {
