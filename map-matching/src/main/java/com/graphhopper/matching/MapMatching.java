@@ -66,26 +66,26 @@ import static com.graphhopper.util.DistancePlaneProjection.DIST_PLANE;
  * @author kodonnell
  */
 public class MapMatching {
-    private final BaseGraph graph;
-    private final Router router;
-    private final LocationIndexTree locationIndex;
-    private double measurementErrorSigma = 10.0;
-    private double transitionProbabilityBeta = 2.0;
-    private final DistanceCalc distanceCalc = new DistancePlaneProjection();
-    private QueryGraph queryGraph;
+    protected final BaseGraph graph;
+    protected final Router router;
+    protected final LocationIndexTree locationIndex;
+    protected double measurementErrorSigma = 10.0;
+    protected double transitionProbabilityBeta = 2.0;
+    protected final DistanceCalc distanceCalc = new DistancePlaneProjection();
+    protected QueryGraph queryGraph;
     /// index of the input observations up to which processing was successful
-    private int processedUpTo = 0;
+    protected int processedUpTo = 0;
     /// processing offset at start
-    private int offset = 0;
+    protected int offset = 0;
     /// indexes of observations after filtering
-    private List<Integer> filteredIndexMapping = new ArrayList<Integer>();
-    private int maxProcessingTimeSeconds = 120;
+    protected List<Integer> filteredIndexMapping = new ArrayList<Integer>();
+    protected int maxProcessingTimeSeconds = 120;
 
     // number of points after removing duplicates and points from the input having a
     // distance shorter than the measurement accuracy
-    private int pointCount = -1;
+    protected int pointCount = -1;
 
-    private Map<String, Object> statistics = new HashMap<>();
+    protected Map<String, Object> statistics = new HashMap<>();
 
     public static MapMatching fromGraphHopper(GraphHopper graphHopper, PMap hints) {
         Router router = routerFromGraphHopper(graphHopper, hints);
@@ -150,7 +150,7 @@ public class MapMatching {
                 return result;
             }
 
-            private Path calcOnePath(QueryGraph queryGraph, int fromNode, int toNode, int fromOutEdge, int toInEdge) {
+            protected Path calcOnePath(QueryGraph queryGraph, int fromNode, int toNode, int fromOutEdge, int toInEdge) {
                 Weighting queryGraphWeighting = queryGraph.wrapWeighting(weighting);
                 if (landmarks != null) {
                     AStarBidirection aStarBidirection = new AStarBidirection(queryGraph, queryGraphWeighting, TraversalMode.EDGE_BASED) {
@@ -218,7 +218,7 @@ public class MapMatching {
         this.measurementErrorSigma = measurementErrorSigma;
     }
 
-    private void resetCounters(int observationCount, int offset) {
+    protected void resetCounters(int observationCount, int offset) {
         this.offset = offset;
         this.pointCount = observationCount;
         this.processedUpTo = offset;
@@ -237,7 +237,7 @@ public class MapMatching {
      * <p>
      * It will throw an exception if a segment of the input list cannot be matched.
      *
-     * @param gpxList the input list with GPX points which should match to edges
+     * @param observations the input list with GPX points which should match to edges
      *                of the graph specified in the constructor
      */
     public MatchResult match(List<Observation> observations, StopWatch sw) {
@@ -249,7 +249,7 @@ public class MapMatching {
      * <p>
      * It will start at the provided index.
      *
-     * @param gpxList      The input list with GPX points which should match to edges
+     * @param observations      The input list with GPX points which should match to edges
      *                     of the graph specified in the constructor
      * @param ignoreErrors Whether to ignore unmatchable segments.
      * @param offset       Offset to start matching at. This value will be stored and available
@@ -354,7 +354,7 @@ public class MapMatching {
         return Collections.emptyList();
     }
 
-    private List<Snap> findCandidateSnapsInBBox(double queryLat, double queryLon, BBox queryShape) {
+    protected List<Snap> findCandidateSnapsInBBox(double queryLat, double queryLon, BBox queryShape) {
         EdgeFilter edgeFilter = router.getSnapFilter();
         List<Snap> snaps = new ArrayList<>();
         IntHashSet seenEdges = new IntHashSet();
@@ -391,7 +391,7 @@ public class MapMatching {
      * transition probabilities. Creates directed candidates for virtual nodes and undirected
      * candidates for real nodes.
      */
-    private List<ObservationWithCandidateStates> createTimeSteps(List<Observation> filteredObservations, List<List<Snap>> splitsPerObservation) {
+    protected List<ObservationWithCandidateStates> createTimeSteps(List<Observation> filteredObservations, List<List<Snap>> splitsPerObservation) {
         if (splitsPerObservation.size() != filteredObservations.size()) {
             throw new IllegalArgumentException(
                     "filteredGPXEntries and queriesPerEntry must have same size.");
@@ -444,7 +444,7 @@ public class MapMatching {
         double minusLogProbability;
     }
 
-    private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean ignoreErrors, StopWatch sw) {
+    protected List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps, boolean ignoreErrors, StopWatch sw) {
         if (timeSteps.isEmpty()) {
             return Collections.emptyList();
         }
@@ -538,7 +538,7 @@ public class MapMatching {
         return result;
     }
 
-    private List<EdgeMatch> prepareEdgeMatches(List<SequenceState<State, Observation, Path>> seq) {
+    protected List<EdgeMatch> prepareEdgeMatches(List<SequenceState<State, Observation, Path>> seq) {
         // This creates a list of directed edges (EdgeIteratorState instances turned the right way),
         // each associated with 0 or more of the observations.
         // These directed edges are edges of the real street graph, where nodes are intersections.
@@ -595,7 +595,7 @@ public class MapMatching {
         return edgeMatches;
     }
 
-    private double gpxLength(List<Observation> gpxList) {
+    protected double gpxLength(List<Observation> gpxList) {
         if (gpxList.isEmpty()) {
             return 0;
         } else {
@@ -610,13 +610,13 @@ public class MapMatching {
         }
     }
 
-    private boolean equalEdges(EdgeIteratorState edge1, EdgeIteratorState edge2) {
+    protected boolean equalEdges(EdgeIteratorState edge1, EdgeIteratorState edge2) {
         return edge1.getEdge() == edge2.getEdge()
                 && edge1.getBaseNode() == edge2.getBaseNode()
                 && edge1.getAdjNode() == edge2.getAdjNode();
     }
 
-    private EdgeIteratorState resolveToRealEdge(EdgeIteratorState edgeIteratorState) {
+    protected EdgeIteratorState resolveToRealEdge(EdgeIteratorState edgeIteratorState) {
         if (queryGraph.isVirtualNode(edgeIteratorState.getBaseNode()) || queryGraph.isVirtualNode(edgeIteratorState.getAdjNode())) {
             return graph.getEdgeIteratorStateForKey(((VirtualEdgeIteratorState) edgeIteratorState).getOriginalEdgeKey());
         } else {
@@ -628,7 +628,7 @@ public class MapMatching {
         return statistics;
     }
 
-    private static class MapMatchedPath extends Path {
+    protected static class MapMatchedPath extends Path {
         MapMatchedPath(Graph graph, Weighting weighting, List<EdgeIteratorState> edges) {
             super(graph);
             int prevEdge = EdgeIterator.NO_EDGE;

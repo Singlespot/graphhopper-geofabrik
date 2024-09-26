@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>graphhopper-example</artifactId>
-    <version>9.1-osm-reader-callbacks-spt-1.0.2</version>
+    <version>9.1-osm-reader-callbacks-spt-1.0.3</version>
     <packaging>jar</packaging>
     <name>GraphHopper Example</name>
     <description>Isochrone calculation with GraphHopper</description>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-parent</artifactId>
-        <version>9.1-osm-reader-callbacks-spt-1.0.2</version>
+        <version>9.1-osm-reader-callbacks-spt-1.0.3</version>
     </parent>  
 
     <dependencies>
