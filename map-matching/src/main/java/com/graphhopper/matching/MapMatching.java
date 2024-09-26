@@ -629,7 +629,7 @@ public class MapMatching {
     }
 
     protected static class MapMatchedPath extends Path {
-        MapMatchedPath(Graph graph, Weighting weighting, List<EdgeIteratorState> edges) {
+        public MapMatchedPath(Graph graph, Weighting weighting, List<EdgeIteratorState> edges) {
             super(graph);
             int prevEdge = EdgeIterator.NO_EDGE;
             for (EdgeIteratorState edge : edges) {

@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.graphhopper</groupId>
     <artifactId>graphhopper-map-matching</artifactId>
-    <version>9.1-osm-reader-callbacks-spt-1.0.3</version>
+    <version>9.1-osm-reader-callbacks-spt-1.0.4</version>
     <packaging>jar</packaging>
     <name>GraphHopper Map Matching</name>
 
     <parent>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-parent</artifactId>
-        <version>9.1-osm-reader-callbacks-spt-1.0.3</version>
+        <version>9.1-osm-reader-callbacks-spt-1.0.4</version>
     </parent>
     
     <dependencies>
