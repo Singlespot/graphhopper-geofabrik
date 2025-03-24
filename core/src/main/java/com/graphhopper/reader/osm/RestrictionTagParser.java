@@ -41,6 +41,10 @@ public class RestrictionTagParser {
         return turnRestrictionEnc;
     }
 
+    public List<String> getVehicleTypes() {
+        return vehicleTypes;
+    }
+
     public Result parseRestrictionTags(Map<String, Object> tags) throws OSMRestrictionException {
         String restriction = (String) tags.get("restriction");
         List<String> limitedRestrictions = tags.entrySet().stream()
