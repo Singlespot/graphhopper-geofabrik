@@ -1043,7 +1043,7 @@ public final class VectorTile {
         @java.lang.Override
         public <Type> Builder clearExtension(
             com.google.protobuf.GeneratedMessage.GeneratedExtension<
-                vector_tile.VectorTile.Tile.Value, ?> extension) {
+                vector_tile.VectorTile.Tile.Value, Type> extension) {
           return (Builder) super.clearExtension(extension);
         }
         @java.lang.Override
@@ -3637,7 +3637,7 @@ public final class VectorTile {
         @java.lang.Override
         public <Type> Builder clearExtension(
             com.google.protobuf.GeneratedMessage.GeneratedExtension<
-                vector_tile.VectorTile.Tile.Layer, ?> extension) {
+                vector_tile.VectorTile.Tile.Layer, Type> extension) {
           return (Builder) super.clearExtension(extension);
         }
         @java.lang.Override
@@ -5116,7 +5116,7 @@ public final class VectorTile {
       @java.lang.Override
       public <Type> Builder clearExtension(
           com.google.protobuf.GeneratedMessage.GeneratedExtension<
-              vector_tile.VectorTile.Tile, ?> extension) {
+              vector_tile.VectorTile.Tile, Type> extension) {
         return (Builder) super.clearExtension(extension);
       }
       @java.lang.Override
