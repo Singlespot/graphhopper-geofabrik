@@ -20,16 +20,16 @@ package com.graphhopper.http;
 
 import com.graphhopper.gtfs.GtfsStorage;
 import com.graphhopper.gtfs.RealtimeFeed;
-import io.dropwizard.ConfiguredBundle;
+import io.dropwizard.core.ConfiguredBundle;
 import io.dropwizard.client.HttpClientBuilder;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
-import org.apache.http.client.HttpClient;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
+import org.apache.hc.client5.http.classic.HttpClient;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 public class RealtimeBundle implements ConfiguredBundle<RealtimeBundleConfiguration> {
 

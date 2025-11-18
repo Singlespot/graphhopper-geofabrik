@@ -115,7 +115,7 @@ public class FareTest {
 
     private static class DataPointProvider implements ArgumentsProvider {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
             List<Object[]> dataPoints = new ArrayList<>();
             for (int i = 0; i < fares.size(); i++) {
                 Map<String, Map<String, Fare>> fare = fares.get(i);

@@ -93,7 +93,7 @@ public class ShortcutUnpackerTest {
 
     private static class FixtureProvider implements ArgumentsProvider {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
             return Stream.of(
                     new Fixture(false),
                     new Fixture(true)
