@@ -652,7 +652,7 @@ public class GraphHopper {
         sortedImportUnits.forEach((name, importUnit) -> {
             BiFunction<EncodedValueLookup, PMap, TagParser> createTagParser = importUnit.getCreateTagParser();
             if (createTagParser != null)
-                sortedParsers.add(createTagParser.apply(encodingManager, encodedValuesWithProps.getOrDefault(name, new PMap().putObject("date_range_parser", dateRangeParser))));
+                sortedParsers.add(createTagParser.apply(encodingManager, encodedValuesWithProps.getOrDefault(name, new PMap().putObject("date_range_parser", dateRangeParser).putObject("date_range_parser_day", dateRangeParserString))));
         });
 
         OSMParsers osmParsers = osmParsersSupplier.get();
@@ -845,6 +845,12 @@ public class GraphHopper {
 
     protected void prepareImport() {
         Map<String, PMap> encodedValuesWithProps = parseEncodedValueString(encodedValuesString);
+        // Add date_range_parser_day to temporal access encoded values if they don't have it
+        for (String key : encodedValuesWithProps.keySet()) {
+            if (key.contains("temporal_access")) {
+                encodedValuesWithProps.get(key).putObject("date_range_parser_day", dateRangeParserString);
+            }
+        }
         NameValidator nameValidator = s -> importRegistry.createImportUnit(s) != null;
         Set<String> missing = new LinkedHashSet<>();
         profilesByName.values().

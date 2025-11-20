@@ -355,7 +355,7 @@
 		<nd ref="4419006272"/>
 		<nd ref="4419006277"/>
 		<tag k="access" v="destination"/>
-		<tag k="access:conditional" v="no@(Jan15-Aug15)"/>
+		<tag k="access:conditional" v="no@(Jan 15-Aug 15)"/>
 		<tag k="bicycle" v="no"/>
 		<tag k="highway" v="path"/>
 		<tag k="path" v="climbing_access"/>
@@ -372,7 +372,7 @@
 		<nd ref="4419006279"/>
 		<nd ref="4419006282"/>
 		<tag k="access" v="destination"/>
-		<tag k="access:conditional" v="no@ (Jan15-Aug15)"/>
+		<tag k="access:conditional" v="no@ (Jan 15-Aug 15)"/>
 		<tag k="bicycle" v="no"/>
 		<tag k="cutting" v="yes"/>
 		<tag k="highway" v="path"/>
