@@ -263,8 +263,12 @@ public class MapMatching {
         statistics.put("filteredObservations", filteredObservations.size());
 
         // Snap observations to links. Generates multiple candidate snaps per observation.
+        EdgeFilter edgeFilter = router.getSnapFilter();
         List<List<Snap>> snapsPerObservation = filteredObservations.stream()
-                .map(o -> findCandidateSnaps(o.getPoint().lat, o.getPoint().lon, o.getPoint().accuracy))
+                .map(o -> {
+                    Snap snap = locationIndex.findClosest(o.getPoint().lat, o.getPoint().lon, o.getPoint().accuracy, o.getPoint().index, o.getPoint().timestamp, edgeFilter);
+                    return snap != null && snap.isValid() ? Collections.singletonList(snap) : Collections.<Snap>emptyList();
+                })
                 .collect(Collectors.toList());
         statistics.put("snapsPerObservation", snapsPerObservation.stream().mapToInt(Collection::size).toArray());
 
@@ -339,14 +343,14 @@ public class MapMatching {
         return filtered;
     }
 
-    public List<Snap> findCandidateSnaps(final double queryLat, final double queryLon, final double queryMeasurementErrorSigma) {
+    public List<Snap> findCandidateSnaps(final double queryLat, final double queryLon, final double queryMeasurementErrorSigma, int index, Date timestamp) {
         double errorSigma = Double.isNaN(queryMeasurementErrorSigma) ? measurementErrorSigma : queryMeasurementErrorSigma;
         double rLon = (errorSigma * 360.0 / DistanceCalcEarth.DIST_EARTH.calcCircumference(queryLat));
         double rLat = errorSigma / DistanceCalcEarth.METERS_PER_DEGREE;
         Envelope envelope = new Envelope(queryLon, queryLon, queryLat, queryLat);
         for (int i = 0; i < 50; i++) {
             envelope.expandBy(rLon, rLat);
-            List<Snap> snaps = findCandidateSnapsInBBox(queryLat, queryLon, BBox.fromEnvelope(envelope));
+            List<Snap> snaps = findCandidateSnapsInBBox(queryLat, queryLon, BBox.fromEnvelope(envelope), index, timestamp, errorSigma);
             if (!snaps.isEmpty()) {
                 return snaps;
             }
@@ -354,7 +358,7 @@ public class MapMatching {
         return Collections.emptyList();
     }
 
-    protected List<Snap> findCandidateSnapsInBBox(double queryLat, double queryLon, BBox queryShape) {
+    protected List<Snap> findCandidateSnapsInBBox(double queryLat, double queryLon, BBox queryShape, int index, Date timestamp, double errorSigma) {
         EdgeFilter edgeFilter = router.getSnapFilter();
         List<Snap> snaps = new ArrayList<>();
         IntHashSet seenEdges = new IntHashSet();
@@ -362,7 +366,7 @@ public class MapMatching {
         locationIndex.query(queryShape, edgeId -> {
             EdgeIteratorState edge = graph.getEdgeIteratorStateForKey(edgeId * 2);
             if (seenEdges.add(edgeId) && edgeFilter.accept(edge)) {
-                Snap snap = new Snap(queryLat, queryLon);
+                Snap snap = new Snap(queryLat, queryLon, errorSigma, index, timestamp);
                 locationIndex.traverseEdge(queryLat, queryLon, edge, (node, normedDist, wayIndex, pos) -> {
                     if (normedDist < snap.getQueryDistance()) {
                         snap.setQueryDistance(normedDist);

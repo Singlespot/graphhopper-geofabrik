@@ -65,13 +65,13 @@ public class ExtendedJsonResponseTest {
 
     private List<State> getGpxExtension() {
         List<State> list = new ArrayList<>();
-        Snap snap1 = new Snap(-3.4445, -38.9990) {
+        Snap snap1 = new Snap(-3.4445, -38.9990, 15.0, 0, new Date()) {
             @Override
             public GHPoint3D getSnappedPoint() {
                 return new GHPoint3D(-3.4446, -38.9996, 0);
             }
         };
-        Snap snap2 = new Snap(-3.4445, -38.9990) {
+        Snap snap2 = new Snap(-3.4445, -38.9990, 15.0, 1, new Date()) {
             @Override
             public GHPoint3D getSnappedPoint() {
                 return new GHPoint3D(-3.4449, -38.9999, 0);

@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -172,7 +173,7 @@ public class RoutingAlgorithmTest {
             double latAdj = na.getLat(edge.getAdjNode());
             double lonAdj = na.getLon(edge.getAdjNode());
             // calculate query point near the base node but not directly on it!
-            Snap res = new Snap(lat + (latAdj - lat) * .1, lon + (lonAdj - lon) * .1);
+            Snap res = new Snap(lat + (latAdj - lat) * .1, lon + (lonAdj - lon) * .1, 3.0, 0, new Date());
             res.setClosestNode(edge.getBaseNode());
             res.setClosestEdge(edge);
             res.setWayIndex(0);

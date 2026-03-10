@@ -34,6 +34,7 @@ import com.graphhopper.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
 import java.util.Random;
 
 import static com.graphhopper.util.GHUtility.updateDistancesFor;
@@ -371,7 +372,7 @@ public class PrepareContractionHierarchiesTest {
         assertEquals(2, routingCHGraph.getEdges() - g.getEdges(), "there should be exactly two (bidirectional) shortcuts (2-3) and (3-4)");
 
         // insert virtual node and edges
-        Snap snap = new Snap(0.001, 0.00015); // between 3 and 1
+        Snap snap = new Snap(0.001, 0.00015, 4.0, 0, new Date()); // between 3 and 1
         snap.setClosestEdge(edge31);
         snap.setSnappedPosition(Snap.Position.EDGE);
         snap.setClosestNode(8);

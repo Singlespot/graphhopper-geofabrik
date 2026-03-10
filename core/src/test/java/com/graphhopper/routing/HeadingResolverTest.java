@@ -34,6 +34,8 @@ import com.graphhopper.util.GHUtility;
 import com.graphhopper.util.Helper;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HeadingResolverTest {
@@ -135,7 +137,7 @@ class HeadingResolverTest {
     }
 
     private Snap createSnap(EdgeIteratorState closestEdge, double lat, double lon, int wayIndex) {
-        Snap snap = new Snap(lat, lon);
+        Snap snap = new Snap(lat, lon, 2.0, 0, new Date());
         snap.setClosestEdge(closestEdge);
         snap.setSnappedPosition(Snap.Position.EDGE);
         snap.setWayIndex(wayIndex);

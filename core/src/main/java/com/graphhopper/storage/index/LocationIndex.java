@@ -20,6 +20,8 @@ package com.graphhopper.storage.index;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.util.shapes.BBox;
 
+import java.util.Date;
+
 /**
  * Provides a way to map real world data "lat,lon" to internal ids/indices of a memory efficient graph
  * - often just implemented as an array.
@@ -45,6 +47,10 @@ public interface LocationIndex {
      * the method Snap.isValid will return false.
      */
     Snap findClosest(double lat, double lon, EdgeFilter edgeFilter);
+
+    default Snap findClosest(double lat, double lon, double accuracy, int index, Date timestamp, EdgeFilter edgeFilter) {
+        return findClosest(lat, lon, edgeFilter);
+    }
 
     /**
      * This method explores the LocationIndex with the specified Visitor. It visits only the stored edges (and only once)

@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Date;
 
 import static com.graphhopper.util.DistancePlaneProjection.DIST_PLANE;
 
@@ -271,10 +272,15 @@ public class LocationIndexTree implements LocationIndex {
 
     @Override
     public Snap findClosest(final double queryLat, final double queryLon, final EdgeFilter edgeFilter) {
+        return findClosest(queryLat, queryLon, Double.NaN, -1, null, edgeFilter);
+    }
+
+    @Override
+    public Snap findClosest(final double queryLat, final double queryLon, double accuracy, int index, Date timestamp, final EdgeFilter edgeFilter) {
         if (isClosed())
             throw new IllegalStateException("You need to create a new LocationIndex instance as it is already closed");
 
-        final Snap closestMatch = new Snap(queryLat, queryLon);
+        final Snap closestMatch = new Snap(queryLat, queryLon, accuracy, index, timestamp);
         IntHashSet seenEdges = new IntHashSet();
         for (int iteration = 0; iteration < maxRegionSearch; iteration++) {
             lineIntIndex.findEdgeIdsInNeighborhood(queryLat, queryLon, iteration, edgeId -> {

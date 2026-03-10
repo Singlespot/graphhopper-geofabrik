@@ -277,14 +277,14 @@ public class QueryGraphTest {
         EdgeIteratorState edgeReverse = edge.detach(true);
 
         DistanceCalcEuclidean distCalc = new DistanceCalcEuclidean();
-        Snap snap = new Snap(0, 0.00005);
+        Snap snap = new Snap(0, 0.00005, 1.0, 0, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(0);
         snap.setSnappedPosition(EDGE);
         snap.calcSnappedPoint(distCalc);
         assertEquals(10, snap.getSnappedPoint().getEle(), 1e-1);
 
-        snap = new Snap(0, 0.00005);
+        snap = new Snap(0, 0.00005, 1.0, 0, new Date());
         snap.setClosestEdge(edgeReverse);
         snap.setWayIndex(0);
         snap.setSnappedPosition(EDGE);
@@ -309,7 +309,7 @@ public class QueryGraphTest {
         updateDistancesFor(g, 3, 0, 0.002);
         updateDistancesFor(g, 4, 0, 0.003);
 
-        Snap snap = new Snap(-0.0005, 0.001);
+        Snap snap = new Snap(-0.0005, 0.001, 1.0, 1, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(1);
         snap.calcSnappedPoint(new DistanceCalcEuclidean());
@@ -403,7 +403,7 @@ public class QueryGraphTest {
                                      EdgeIteratorState edge, int wayIndex, Snap.Position pos) {
         if (edge == null)
             throw new IllegalStateException("Specify edge != null");
-        Snap tmp = new Snap(lat, lon);
+        Snap tmp = new Snap(lat, lon, 1.0, 2, new Date());
         tmp.setClosestEdge(edge);
         tmp.setWayIndex(wayIndex);
         tmp.setSnappedPosition(pos);
@@ -509,7 +509,7 @@ public class QueryGraphTest {
     }
 
     private Snap fakeEdgeSnap(EdgeIteratorState edge, double lat, double lon, int wayIndex) {
-        Snap snap = new Snap(lat, lon);
+        Snap snap = new Snap(lat, lon, 1.0, 3, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(wayIndex);
         snap.setSnappedPosition(EDGE);

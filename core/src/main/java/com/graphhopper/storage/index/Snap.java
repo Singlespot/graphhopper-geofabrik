@@ -23,6 +23,7 @@ import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.GHPoint;
 import com.graphhopper.util.shapes.GHPoint3D;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -47,8 +48,8 @@ public class Snap {
     private GHPoint3D snappedPoint;
     private Position snappedPosition;
 
-    public Snap(double queryLat, double queryLon) {
-        queryPoint = new GHPoint(queryLat, queryLon);
+    public Snap(double queryLat, double queryLon, double accuracy, int index, Date timestamp) {
+        queryPoint = new GHPoint(queryLat, queryLon, accuracy, index, timestamp);
     }
 
     /**
@@ -112,6 +113,18 @@ public class Snap {
 
     public GHPoint getQueryPoint() {
         return queryPoint;
+    }
+
+    public int getQueryPointIndex() {
+        return queryPoint.index;
+    }
+
+    public double getQueryPointAccuracy() {
+        return queryPoint.accuracy;
+    }
+
+    public Date getQueryPointTimestamp() {
+        return queryPoint.timestamp;
     }
 
     /**

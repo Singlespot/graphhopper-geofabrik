@@ -62,7 +62,7 @@ public class PtLocationSnapper {
                     for (Map.Entry<GtfsStorage.FeedIdWithStopId, Integer> e : gtfsStorage.getStationNodes().entrySet()) {
                         if (e.getValue() == stopNodeId.value) {
                             Stop stop = gtfsStorage.getGtfsFeeds().get(e.getKey().feedId).stops.get(e.getKey().stopId);
-                            final Snap stopSnap = new Snap(stop.stop_lat, stop.stop_lon);
+                            final Snap stopSnap = new Snap(stop.stop_lat, stop.stop_lon, 10.0, e.getKey().stopId.hashCode(), null);
                             stopSnap.setClosestNode(stopNodeId.value);
                             allSnaps.add(() -> new Label.NodeId(gtfsStorage.getPtToStreet().getOrDefault(stopSnap.getClosestNode(), -1), stopSnap.getClosestNode()));
                             points.add(stopSnap.getQueryPoint().lat, stopSnap.getQueryPoint().lon);
@@ -93,7 +93,7 @@ public class PtLocationSnapper {
             final Integer node = gtfsStorage.getStationNodes().get(new GtfsStorage.FeedIdWithStopId(entry.getKey(), station.stop_id));
             if (node != null) {
                 Stop stop = gtfsStorage.getGtfsFeeds().get(entry.getKey()).stops.get(station.stop_id);
-                final Snap stationSnap = new Snap(stop.stop_lat, stop.stop_lon);
+                final Snap stationSnap = new Snap(stop.stop_lat, stop.stop_lon, 10.0, station.stop_id.hashCode(), null);
                 stationSnap.setClosestNode(node);
                 return stationSnap;
             }

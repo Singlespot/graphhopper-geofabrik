@@ -33,6 +33,8 @@ import com.graphhopper.util.EdgeIteratorState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
+
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -148,7 +150,7 @@ class QueryRoutingCHGraphTest {
         CHStorage chStore = CHStorage.fromGraph(graph, chConfig);
         RoutingCHGraph routingCHGraph = RoutingCHGraphImpl.fromGraph(graph, chStore, chConfig);
 
-        Snap snap = new Snap(50.00, 10.05);
+        Snap snap = new Snap(50.00, 10.05, 5.0, 0, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(0);
         snap.setSnappedPosition(Snap.Position.EDGE);
@@ -220,7 +222,7 @@ class QueryRoutingCHGraphTest {
         chBuilder.setIdentityLevels();
         chBuilder.addShortcutEdgeBased(0, 2, PrepareEncoder.getScFwdDir(), 20, 0, 1, 0, 2);
 
-        Snap snap = new Snap(50.00, 10.05);
+        Snap snap = new Snap(50.00, 10.05, 5.0, 0, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(0);
         snap.setSnappedPosition(Snap.Position.EDGE);
@@ -296,7 +298,7 @@ class QueryRoutingCHGraphTest {
         chBuilder.setIdentityLevels();
         chBuilder.addShortcutEdgeBased(0, 2, PrepareEncoder.getScFwdDir(), 20, 0, 1, 0, 2);
 
-        Snap snap = new Snap(50.00, 10.05);
+        Snap snap = new Snap(50.00, 10.05, 5.0, 0, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(0);
         snap.setSnappedPosition(Snap.Position.EDGE);
@@ -344,7 +346,7 @@ class QueryRoutingCHGraphTest {
         chBuilder.setLevel(0, 5);
         chBuilder.setLevel(1, 7);
 
-        Snap snap = new Snap(50.00, 10.05);
+        Snap snap = new Snap(50.00, 10.05, 5.0, 0, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(0);
         snap.setSnappedPosition(Snap.Position.EDGE);
@@ -400,7 +402,7 @@ class QueryRoutingCHGraphTest {
         assertEnd(iter);
 
         // now including virtual edges
-        Snap snap = new Snap(50.00, 10.05);
+        Snap snap = new Snap(50.00, 10.05, 5.0, 0, new Date());
         snap.setClosestEdge(edge);
         snap.setWayIndex(0);
         snap.setSnappedPosition(Snap.Position.EDGE);
@@ -484,13 +486,13 @@ class QueryRoutingCHGraphTest {
         assertEquals(5, routingCHGraph.getTurnWeight(0, 1, 1));
 
         // with virtual nodes
-        Snap snap1 = new Snap(50.00, 10.05);
+        Snap snap1 = new Snap(50.00, 10.05, 5.0, 0, new Date());
         snap1.setClosestEdge(edge1);
         snap1.setWayIndex(0);
         snap1.setSnappedPosition(Snap.Position.EDGE);
         snap1.calcSnappedPoint(DistancePlaneProjection.DIST_PLANE);
 
-        Snap snap2 = new Snap(50.00, 10.15);
+        Snap snap2 = new Snap(50.00, 10.15, 5.0, 1, new Date());
         snap2.setClosestEdge(edge2);
         snap2.setWayIndex(0);
         snap2.setSnappedPosition(Snap.Position.EDGE);
