@@ -114,7 +114,7 @@ public class GHPoint {
 
     @Override
     public String toString() {
-        return lat + "," + lon;
+        return lat + "," + lon + ", index:" + index;
     }
 
     public String toShortString() {

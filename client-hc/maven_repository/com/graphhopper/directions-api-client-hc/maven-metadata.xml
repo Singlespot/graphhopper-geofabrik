@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.graphhopper</groupId>
+  <artifactId>directions-api-client-hc</artifactId>
+  <versioning>
+    <versions>
+      <version>9.1-osm-reader-callbacks-spt-1.0.9-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20260311101111</lastUpdated>
+  </versioning>
+</metadata>
